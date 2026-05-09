@@ -41,6 +41,18 @@ def run_financial_agent(state: UplanState) -> dict:
             movable_assets=state.get("movable_assets", []),
             t_req=t_req,
         )
+        if state.get("financial_accounts"):
+            findings.append(AgentFinding(
+                agent_id="financial_flow",
+                rule_id="R1_bank_statement_missing",
+                severity="warning",
+                message=(
+                    "Affidavit lists bank and fixed-deposit balances, but no "
+                    "month-by-month bank statement series was available. "
+                    "Maintained liquidity and late-deposit risk cannot be verified."
+                ),
+                requires_human_review=False,
+            ))
 
     return {"findings": findings, "completed_agents": ["financial_agent"]}
 

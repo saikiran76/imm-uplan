@@ -18,6 +18,19 @@ def run_tax_agent(state: UplanState) -> dict:
     delta_warn = state["delta_warn"]
     delta_crit = state["delta_crit"]
 
+    if not i_tax and i_aff:
+        findings.append(AgentFinding(
+            agent_id="tax_income",
+            rule_id="R5_tax_baseline_missing",
+            severity="critical",
+            message=(
+                f"Affidavit/income sources claim {i_aff:,.0f}, but no tax return "
+                "or computation baseline was available. Declared income cannot be "
+                "independently verified."
+            ),
+            requires_human_review=True,
+        ))
+
     if i_tax and i_form:
         deviation = abs(i_form - i_tax) / i_tax
         if deviation > epsilon:

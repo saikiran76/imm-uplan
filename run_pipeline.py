@@ -162,6 +162,15 @@ async def main() -> None:
         "reliable_fields": payload.get("reliable_fields", {}),
         "agent_output": output,
         "findings": output["findings"],
+        "narrative_synthesis": {
+            "narrative_score": output.get("narrative_score"),
+            "human_review_required": output.get("human_review_required"),
+            "synthesis_trace": output.get("synthesis_trace"),
+        },
+        "adversarial_audit": {
+            "rejection_case": output.get("rejection_case"),
+            "rebuttal_case": output.get("rebuttal_case"),
+        },
     }
 
     text = json.dumps(to_jsonable(result), indent=2)
