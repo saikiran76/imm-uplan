@@ -10,7 +10,7 @@ import gradio as gr
 
 
 USE_LIVE_BACKEND = os.getenv("USE_LIVE_BACKEND", "false").lower() == "true"
-AMD_ENDPOINT = os.getenv("AMD_ENDPOINT", "http://localhost:8000/extract")
+AMD_ENDPOINT = os.getenv("AMD_ENDPOINT", "http://localhost:8000/analyze")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 SAMPLE_PATH = Path(__file__).parent / "sample_outputs" / "demo_result.json"
 DEMO_RESULT = json.loads(SAMPLE_PATH.read_text(encoding="utf-8")) if SAMPLE_PATH.exists() else {}
@@ -93,6 +93,15 @@ def normalize_result(result: dict[str, Any]) -> dict[str, Any]:
         findings = result.get("findings", output.get("findings", []))
         full = result.get("full_result", {})
         summary = result.get("summary", {})
+        narrative = result.get("narrative_synthesis") or {
+            "narrative_score": output.get("narrative_score"),
+            "human_review_required": output.get("human_review_required"),
+            "synthesis_trace": output.get("synthesis_trace"),
+        }
+        adversarial = result.get("adversarial_audit") or {
+            "rejection_case": output.get("rejection_case"),
+            "rebuttal_case": output.get("rebuttal_case"),
+        }
         return {
             "applicant_name": fields.get("beneficiary_name") or "Applicant",
             "sponsor_name": fields.get("name_variants", {}).get("affidavit", "Sponsor"),
@@ -102,7 +111,8 @@ def normalize_result(result: dict[str, Any]) -> dict[str, Any]:
             "documents_parsed": infer_documents(full, summary),
             "reliable_fields": fields,
             "agent_findings": findings,
-            "narrative_synthesis": synthesize(findings),
+            "narrative_synthesis": narrative,
+            "adversarial_audit": adversarial,
             "next_steps": next_steps(findings),
             "deletion_cert": full.get("deletion_cert", ""),
         }
@@ -264,6 +274,15 @@ def build_dashboard_html(raw_result: dict[str, Any]) -> str:
     if synthesis.get("compound_flags"):
         rows = "".join(f"<div style='font-size:12px;padding:4px 0'>{item}</div>" for item in synthesis["compound_flags"])
         html += card("Cross-document risks", rows, bg="#FAEEDA", border="#E7C27A")
+
+    adversarial = result.get("adversarial_audit", {})
+    if adversarial.get("rejection_case") or adversarial.get("rebuttal_case"):
+        rows = ""
+        if adversarial.get("rejection_case"):
+            rows += f"<div style='font-size:12px;padding:4px 0'><b>Officer rejection case:</b> {adversarial['rejection_case']}</div>"
+        if adversarial.get("rebuttal_case"):
+            rows += f"<div style='font-size:12px;padding:4px 0'><b>Applicant rebuttal path:</b> {adversarial['rebuttal_case']}</div>"
+        html += card("Adversarial audit", rows)
 
     if result.get("next_steps"):
         rows = "".join(
