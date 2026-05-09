@@ -99,16 +99,33 @@ Extract the bank balance certificate fields from this page and return ONLY valid
   "account_holder_name": "<string or null>",
   "institution_name": "<string or null>",
   "account_number": "<string or null>",
-  "account_type": "<string or null>",
   "currency_code": "<ISO 4217 code or null>",
   "certificate_date": "<YYYY-MM-DD or null>",
+  "balances": [
+    {
+      "account_type": "<savings|fixed_deposit|term_deposit|current|other>",
+      "amount": {"value": <number or null>, "confidence": "<high|medium|low>"},
+      "description": "<string or null>"
+    }
+  ],
   "available_balance": {"value": <number or null>, "confidence": "<high|medium|low>"},
+  "exchange_rate": {"value": <number or null>, "currency_pair": "<string or null>", "confidence": "<high|medium|low>"},
+  "held_minimum_days": <integer or null>,
   "source_quality": "<digital|scan|photograph|unknown>"
 }
 
 If the page is a bank certificate, bank balance certificate, account balance
 letter, solvency certificate, or fixed-deposit balance certificate, use this
 schema. Do not extract account numbers as monetary amounts.
+
+Important:
+- Extract every separately listed balance. If a sentence says "Rs. 245582.83 in
+  savings and 1023668.40 in fixed deposits", return TWO balances:
+  savings = 245582.83 and fixed_deposit = 1023668.40.
+- available_balance should be the printed total only if a total is explicitly
+  printed. Do not invent a total.
+- If the certificate says balances were held for a minimum 90 day period, set
+  held_minimum_days to 90.
 """
 
 

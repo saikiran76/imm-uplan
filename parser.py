@@ -243,12 +243,27 @@ class ExtractionParser:
     ) -> None:
         r.currency_code = d.get("currency_code")
         r.name_string = d.get("account_holder_name")
-        r.financial_accounts.append(FinancialAccount(
-            institution_name=d.get("institution_name"),
-            account_number=str(d.get("account_number")) if d.get("account_number") is not None else None,
-            account_type=d.get("account_type") or "balance_certificate",
-            amount=_wrap_money_obj(d.get("available_balance"), lp, q),
-        ))
+        institution = d.get("institution_name")
+        account_number = str(d.get("account_number")) if d.get("account_number") is not None else None
+
+        balances = _as_list(d.get("balances"))
+        for balance in balances:
+            if not isinstance(balance, dict):
+                continue
+            r.financial_accounts.append(FinancialAccount(
+                institution_name=institution,
+                account_number=account_number,
+                account_type=balance.get("account_type") or "balance_certificate",
+                amount=_wrap_money_obj(balance.get("amount"), lp, q),
+            ))
+
+        if not r.financial_accounts:
+            r.financial_accounts.append(FinancialAccount(
+                institution_name=institution,
+                account_number=account_number,
+                account_type=d.get("account_type") or "balance_certificate",
+                amount=_wrap_money_obj(d.get("available_balance"), lp, q),
+            ))
 
     def _parse_tax_return(
         self,
