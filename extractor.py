@@ -444,10 +444,22 @@ class DocumentExtractor:
         The vision-language model backend. Use MockVLMBackend for testing.
     """
 
-    def __init__(self, vlm: VLMBackend, forced_page_type: Optional[PageType] = None):
+    def __init__(
+        self,
+        vlm: VLMBackend,
+        forced_page_type: Optional[PageType] = None,
+        max_pages: Optional[int] = None,
+        page_start: int = 1,
+        page_end: Optional[int] = None,
+        extraction_max_tokens: Optional[int] = None,
+    ):
         self.vlm = vlm
         self.parser = ExtractionParser()
         self.forced_page_type = forced_page_type
+        self.max_pages = max_pages
+        self.page_start = page_start
+        self.page_end = page_end
+        self.extraction_max_tokens = extraction_max_tokens
         self.debug_events: list[dict[str, Any]] = []
 
     async def extract(
@@ -481,8 +493,9 @@ class DocumentExtractor:
         images: list[Image.Image] = []
         pdf_doc = fitz.open(stream=bytes(raw_bytes), filetype="pdf")
         total_pages = pdf_doc.page_count
+        selected_pages = self._selected_page_indexes(total_pages)
 
-        for page_num in range(total_pages):
+        for page_num in selected_pages:
             page = pdf_doc[page_num]
             mat = fitz.Matrix(RASTER_DPI / 72, RASTER_DPI / 72)
             pix = page.get_pixmap(matrix=mat, alpha=False)
@@ -509,13 +522,14 @@ class DocumentExtractor:
         page_types: list[PageType] = []
         qualities: list[SourceQuality] = []
         previous_known_type: Optional[PageType] = None
-        for page_num, img in enumerate(images, start=1):
+        for idx, img in enumerate(images):
+            original_page_num = selected_pages[idx] + 1
             if self.forced_page_type is not None:
                 ptype, quality = self.forced_page_type, SourceQuality.SCAN
             else:
                 ptype, quality = await self._classify_page(
                     img,
-                    page_num=page_num,
+                    page_num=original_page_num,
                     previous_page_type=previous_known_type,
                 )
             page_types.append(ptype)
@@ -529,7 +543,7 @@ class DocumentExtractor:
             ptype = page_types[i]
             if ptype == PageType.UNKNOWN:
                 continue  # Skip unclassifiable pages
-            result = await self._extract_page(img, page_num=i + 1, page_type=ptype)
+            result = await self._extract_page(img, page_num=selected_pages[i] + 1, page_type=ptype)
             page_results.append(result)
 
         # ── Step 6: Purge all PIL images from RAM ──────────────────────────
@@ -565,6 +579,14 @@ class DocumentExtractor:
         merged.raw_purge_confirmed = True
 
         return merged
+
+    def _selected_page_indexes(self, total_pages: int) -> list[int]:
+        start = max(1, self.page_start)
+        end = min(total_pages, self.page_end or total_pages)
+        indexes = list(range(start - 1, end))
+        if self.max_pages is not None:
+            indexes = indexes[: self.max_pages]
+        return indexes
 
     # ─────────────────────────────────────────────────────────────────────────
     # Internal helpers
@@ -643,6 +665,7 @@ class DocumentExtractor:
             image=img,
             system_prompt=SYSTEM_PROMPT,
             user_prompt=prompt,
+            max_new_tokens=self.extraction_max_tokens,
         )
         try:
             data = json.loads(raw)

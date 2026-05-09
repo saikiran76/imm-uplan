@@ -47,7 +47,14 @@ async def run(args: argparse.Namespace) -> dict[str, Any]:
         backend = MockVLMBackend("mock")
 
     forced_page_type = PageType(args.force_page_type) if args.force_page_type else None
-    extractor = DocumentExtractor(vlm=backend, forced_page_type=forced_page_type)
+    extractor = DocumentExtractor(
+        vlm=backend,
+        forced_page_type=forced_page_type,
+        max_pages=args.max_pages,
+        page_start=args.page_start,
+        page_end=args.page_end,
+        extraction_max_tokens=args.extraction_max_tokens,
+    )
     result = await extractor.extract(args.pdf, session_id=args.session_id)
 
     payload = {
@@ -70,6 +77,10 @@ def main() -> None:
     parser.add_argument("--model-path", default="Qwen/Qwen2.5-VL-3B-Instruct")
     parser.add_argument("--device", default="auto", help="auto, cuda, cpu, or mps.")
     parser.add_argument("--max-new-tokens", type=int, default=768)
+    parser.add_argument("--extraction-max-tokens", type=int, help="Override max tokens for extraction calls only.")
+    parser.add_argument("--max-pages", type=int, help="Only process this many selected pages.")
+    parser.add_argument("--page-start", type=int, default=1, help="1-based first page to process.")
+    parser.add_argument("--page-end", type=int, help="1-based last page to process.")
     parser.add_argument(
         "--force-page-type",
         choices=[p.value for p in PageType if p != PageType.UNKNOWN],
