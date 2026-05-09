@@ -17,6 +17,7 @@ class Confidence(str, Enum):
 
 class PageType(str, Enum):
     BANK_STATEMENT = "bank_statement"
+    BANK_BALANCE_CERTIFICATE = "bank_balance_certificate"
     TAX_RETURN = "tax_return"
     AFFIDAVIT = "affidavit"
     SPONSOR = "sponsor_letter"

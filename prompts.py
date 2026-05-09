@@ -36,6 +36,7 @@ Classify this page and return ONLY valid JSON in this exact shape:
 
 Valid page_type values:
 - "bank_statement"
+- "bank_balance_certificate"
 - "tax_return"
 - "affidavit"
 - "sponsor_letter"
@@ -62,6 +63,7 @@ family declarations, account tables, or continuation text, classify it as
 
 Valid page_type values:
 - "bank_statement"
+- "bank_balance_certificate"
 - "tax_return"
 - "affidavit"
 - "sponsor_letter"
@@ -88,6 +90,25 @@ Extract the bank statement fields from this page and return ONLY valid JSON:
   ],
   "source_quality": "<digital|scan|photograph|unknown>"
 }
+"""
+
+
+BANK_BALANCE_CERTIFICATE_PROMPT = """\
+Extract the bank balance certificate fields from this page and return ONLY valid JSON:
+{
+  "account_holder_name": "<string or null>",
+  "institution_name": "<string or null>",
+  "account_number": "<string or null>",
+  "account_type": "<string or null>",
+  "currency_code": "<ISO 4217 code or null>",
+  "certificate_date": "<YYYY-MM-DD or null>",
+  "available_balance": {"value": <number or null>, "confidence": "<high|medium|low>"},
+  "source_quality": "<digital|scan|photograph|unknown>"
+}
+
+If the page is a bank certificate, bank balance certificate, account balance
+letter, solvency certificate, or fixed-deposit balance certificate, use this
+schema. Do not extract account numbers as monetary amounts.
 """
 
 
@@ -187,6 +208,7 @@ Extract the identity document fields from this page and return ONLY valid JSON:
 
 _PROMPTS: dict[PageType, str] = {
     PageType.BANK_STATEMENT: BANK_STATEMENT_PROMPT,
+    PageType.BANK_BALANCE_CERTIFICATE: BANK_BALANCE_CERTIFICATE_PROMPT,
     PageType.TAX_RETURN: TAX_RETURN_PROMPT,
     PageType.AFFIDAVIT: AFFIDAVIT_PROMPT,
     PageType.SPONSOR: SPONSOR_PROMPT,

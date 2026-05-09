@@ -182,6 +182,7 @@ class ExtractionParser:
 
         dispatch = {
             PageType.BANK_STATEMENT: self._parse_bank_statement,
+            PageType.BANK_BALANCE_CERTIFICATE: self._parse_bank_balance_certificate,
             PageType.TAX_RETURN:     self._parse_tax_return,
             PageType.AFFIDAVIT:      self._parse_affidavit,
             PageType.EMPLOYMENT:     self._parse_application_form,
@@ -232,6 +233,22 @@ class ExtractionParser:
             )
             if w:
                 r.deposit_entries.append((float(i), w))
+
+    def _parse_bank_balance_certificate(
+        self,
+        d: dict,
+        r: PageExtractionResult,
+        lp: float,
+        q: SourceQuality,
+    ) -> None:
+        r.currency_code = d.get("currency_code")
+        r.name_string = d.get("account_holder_name")
+        r.financial_accounts.append(FinancialAccount(
+            institution_name=d.get("institution_name"),
+            account_number=str(d.get("account_number")) if d.get("account_number") is not None else None,
+            account_type=d.get("account_type") or "balance_certificate",
+            amount=_wrap_money_obj(d.get("available_balance"), lp, q),
+        ))
 
     def _parse_tax_return(
         self,

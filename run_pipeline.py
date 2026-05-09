@@ -39,6 +39,69 @@ def money_items(rows: list[dict], amount_key: str = "amount") -> list[dict]:
     return items
 
 
+def merge_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    if len(payloads) == 1:
+        return payloads[0]
+
+    merged_full: dict[str, Any] = {
+        "balance_series": [],
+        "deposit_entries": [],
+        "financial_accounts": [],
+        "income_sources": [],
+        "movable_assets": [],
+        "properties": [],
+        "pages": [],
+        "name_variants": {},
+        "raw_purge_confirmed": True,
+        "total_pages": 0,
+        "deletion_cert": "",
+    }
+    merged_fields: dict[str, Any] = {
+        "financial_accounts": [],
+        "income_sources": [],
+        "movable_assets": [],
+        "properties": [],
+        "family_members": [],
+        "name_variants": {},
+    }
+    summaries = []
+
+    for payload in payloads:
+        full = payload.get("full_result", {})
+        fields = payload.get("reliable_fields", {})
+        summaries.append(payload.get("summary", {}))
+
+        for key in ("balance_series", "deposit_entries", "financial_accounts", "income_sources", "movable_assets", "properties", "pages"):
+            merged_full[key].extend(full.get(key, []))
+        for key in ("financial_accounts", "income_sources", "movable_assets", "properties", "family_members"):
+            merged_fields[key].extend(fields.get(key, []))
+
+        merged_full["name_variants"].update(full.get("name_variants", {}))
+        merged_fields["name_variants"].update(fields.get("name_variants", {}))
+        merged_full["raw_purge_confirmed"] = merged_full["raw_purge_confirmed"] and bool(full.get("raw_purge_confirmed"))
+        merged_full["total_pages"] += int(full.get("total_pages", 0) or 0)
+        if full.get("deletion_cert"):
+            merged_full["deletion_cert"] += ("\n---\n" if merged_full["deletion_cert"] else "") + full["deletion_cert"]
+
+        for key in ("currency_code", "i_tax", "i_form", "i_aff", "i_spon", "spon_relationship", "tax_year", "beneficiary_name", "declarant_address"):
+            if merged_fields.get(key) is None and fields.get(key) is not None:
+                merged_fields[key] = fields[key]
+            if merged_full.get(key) is None and full.get(key) is not None:
+                merged_full[key] = full[key]
+
+    return {
+        "summary": {
+            "filename": "combined-packet",
+            "total_pages": merged_full["total_pages"],
+            "raw_purge_confirmed": merged_full["raw_purge_confirmed"],
+            "source_quality": "mixed",
+            "documents": summaries,
+        },
+        "reliable_fields": merged_fields,
+        "full_result": merged_full,
+    }
+
+
 def build_state_from_payload(
     payload: dict[str, Any],
     t_req: float,
@@ -124,7 +187,7 @@ async def extract_pdf(args: argparse.Namespace) -> dict[str, Any]:
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Run extraction plus Layer 1 UPlan agents.")
     parser.add_argument("--pdf", type=Path, help="PDF to extract before running agents.")
-    parser.add_argument("--extraction-json", type=Path, help="Existing run_real_extraction JSON output.")
+    parser.add_argument("--extraction-json", type=Path, action="append", help="Existing run_real_extraction JSON output. Repeat for multiple documents.")
     parser.add_argument("--out", type=Path, help="Optional path to write full pipeline JSON.")
     parser.add_argument("--t-req", type=float, default=800000.0)
     parser.add_argument("--visa-type", default="student")
@@ -143,7 +206,10 @@ async def main() -> None:
     args = parser.parse_args()
 
     if args.extraction_json:
-        payload = json.loads(args.extraction_json.read_text(encoding="utf-8"))
+        payload = merge_payloads([
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in args.extraction_json
+        ])
     elif args.pdf:
         payload = await extract_pdf(args)
     else:

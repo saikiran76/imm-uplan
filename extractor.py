@@ -732,6 +732,8 @@ class DocumentExtractor:
             if page.name_string:
                 merged.name_variants[page.page_type.value] = page.name_string
 
+            merged.financial_accounts.extend(page.financial_accounts)
+
             if merged.declarant_address is None:
                 merged.declarant_address = page.declarant_address
 
@@ -739,7 +741,6 @@ class DocumentExtractor:
                 merged.beneficiary_name = page.beneficiary_name
 
             merged.family_members.extend(page.family_members)
-            merged.financial_accounts.extend(page.financial_accounts)
             merged.income_sources.extend(page.income_sources)
             merged.movable_assets.extend(page.movable_assets)
             merged.properties.extend(page.properties)
