@@ -129,7 +129,7 @@ class VLMBackend:
         image: Image.Image,
         system_prompt: str,
         user_prompt: str,
-        max_new_tokens: int = 512,
+        max_new_tokens: Optional[int] = None,
     ) -> tuple[str, float]:
         """
         Run one VLM inference pass.
@@ -243,7 +243,7 @@ class HuggingFaceVLMBackend(VLMBackend):
         image: Image.Image,
         system_prompt: str,
         user_prompt: str,
-        max_new_tokens: int = 512,
+        max_new_tokens: Optional[int] = None,
     ) -> tuple[str, float]:
         if self._model is None or self._processor is None or self._torch is None:
             raise RuntimeError("Call HuggingFaceVLMBackend.load() before generate().")
@@ -275,7 +275,7 @@ class HuggingFaceVLMBackend(VLMBackend):
         elif not hasattr(self._model, "hf_device_map"):
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
-        token_budget = max_new_tokens or self.max_new_tokens
+        token_budget = max_new_tokens if max_new_tokens is not None else self.max_new_tokens
         with self._torch.no_grad():
             output = self._model.generate(
                 **inputs,
@@ -402,7 +402,7 @@ class MockVLMBackend(VLMBackend):
         image: Image.Image,
         system_prompt: str,
         user_prompt: str,
-        max_new_tokens: int = 512,
+        max_new_tokens: Optional[int] = None,
     ) -> tuple[str, float]:
         # Identify which fixture to return based on prompt content
         if '"page_type"' in user_prompt or "valid page_type values" in user_prompt.lower():
@@ -609,6 +609,7 @@ class DocumentExtractor:
             image=img,
             system_prompt=SYSTEM_PROMPT,
             user_prompt=prompt,
+            max_new_tokens=256,
         )
         self.debug_events.append({
             "stage": stage,
