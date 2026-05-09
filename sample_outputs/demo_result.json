@@ -1,0 +1,90 @@
+{
+  "applicant_name": "Korada SaiKiran",
+  "sponsor_name": "KORADA SATYANARAYANA",
+  "sponsor_relationship": "Father",
+  "currency_code": "INR",
+  "t_req": 800000,
+  "documents_parsed": [
+    {"type": "affidavit", "pages": 2, "quality": "digital", "status": "extracted"},
+    {"type": "bank_statement", "pages": 6, "quality": "digital", "status": "pending"},
+    {"type": "tax_return", "pages": 3, "quality": "digital", "status": "pending"}
+  ],
+  "reliable_fields": {
+    "beneficiary_name": "Korada SaiKiran",
+    "currency_code": "INR",
+    "declarant_address": "Plot No. 76, SBI Colony, Balaji Nagar, Totapalem area, near Srinivasa College, near Abdul Kalam Park, Vizianagaram",
+    "i_aff": 1200000,
+    "i_tax": null,
+    "i_form": null,
+    "i_spon": null,
+    "balance_closing": null,
+    "spon_relationship": "Father",
+    "name_variants": {
+      "affidavit": "KORADA SATYANARAYANA"
+    },
+    "financial_accounts": [
+      {"institution_name": "State Bank of India", "account_number": "10576616939", "account_type": "Savings", "amount": 99978.85},
+      {"institution_name": "State Bank of India", "account_number": "62214014329", "account_type": "Savings", "amount": 154603.98},
+      {"institution_name": "Union Bank of India", "account_number": "253110100033102", "account_type": "Savings", "amount": 140083.88},
+      {"institution_name": "State Bank of India", "account_number": "62214014329", "account_type": "Fixed Deposit", "amount": 1023668.4},
+      {"institution_name": "LIC of India", "account_number": "808707848", "account_type": "Fixed Deposit", "amount": 162290},
+      {"institution_name": "Bajaj Allianz", "account_number": "0039948302", "account_type": "Fixed Deposit", "amount": 158519.55}
+    ],
+    "income_sources": [
+      {"source": "salary", "annual_amount": 300000},
+      {"source": "business", "annual_amount": 552000},
+      {"source": "rent", "annual_amount": 348000}
+    ],
+    "properties": [
+      {"description": "Residential flat, vacant sites, agricultural land", "value": 16360000}
+    ],
+    "movable_assets": [
+      {"description": "Cash, gold and silver ornaments", "owner": "Korada Venkata Lakshmi", "amount": 25000}
+    ],
+    "family_members": [
+      {"name": "Korada Satyanarayana", "relationship": "Father", "date_of_birth": "21/02/1971", "age": 55},
+      {"name": "Korada Venkata Lakshmi", "relationship": "Mother", "date_of_birth": "01/07/1979", "age": 46},
+      {"name": "Korada Sai Kiran", "relationship": "Son", "date_of_birth": "02/06/2003", "age": 22},
+      {"name": "Korada Kusuma Pushpa", "relationship": "Daughter", "date_of_birth": "15/12/1998", "age": 27}
+    ]
+  },
+  "agent_findings": [
+    {
+      "agent_id": "financial_flow",
+      "rule_id": "R1_affidavit_liquidity",
+      "severity": "warning",
+      "message": "Affidavit liquid and fixed-deposit funds appear sufficient on paper, but a six-month statement is still required to prove maintained liquidity.",
+      "requires_human_review": false
+    },
+    {
+      "agent_id": "tax_income",
+      "rule_id": "R5_tax_baseline_missing",
+      "severity": "critical",
+      "message": "Tax return data is missing, so the declared affidavit income cannot yet be verified against official income records.",
+      "requires_human_review": true
+    },
+    {
+      "agent_id": "identity_consistency",
+      "rule_id": "R8_name_review",
+      "severity": "warning",
+      "message": "Applicant name appears as Korada SaiKiran and Korada Sai Kiran. Confirm spacing across passport, admission letter, and financial documents.",
+      "requires_human_review": false
+    }
+  ],
+  "narrative_synthesis": {
+    "narrative_score": 0.62,
+    "human_review_required": true,
+    "compound_flags": [
+      "Affidavit income and asset claims are present, but tax return and bank statement corroboration are still missing.",
+      "Funds exist across multiple instruments; maintained liquidity must be proven month-by-month."
+    ],
+    "synthesis_trace": "The affidavit provides a plausible financial story, but an officer would ask whether the declared income and funds are externally corroborated by tax filings and bank statements."
+  },
+  "next_steps": [
+    {"priority": "critical", "action": "Upload the latest income tax return or computation of returns to establish tax-verified income."},
+    {"priority": "critical", "action": "Upload six months of bank statements for all declared savings accounts."},
+    {"priority": "warning", "action": "Upload bank balance certificates for fixed deposits and insurance-linked deposits."},
+    {"priority": "info", "action": "Verify name spelling and spacing across affidavit, passport, and admission records."}
+  ],
+  "deletion_cert": "UPLAN-CERT:v1\\ndoc=demo\\nnonce=demo\\nts=demo\\nsig=demo"
+}
