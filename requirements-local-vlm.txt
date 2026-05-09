@@ -4,3 +4,4 @@ accelerate
 torch
 torchvision
 transformers>=4.51.0
+langgraph
