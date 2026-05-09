@@ -1,0 +1,330 @@
+{
+  "full_result": {
+    "balance_series": [
+      {
+        "ci_high": 43656.0,
+        "ci_low": 41944.0,
+        "confidence": "high",
+        "raw_text": "42800.0",
+        "source_quality": "digital",
+        "value": 42800.0
+      },
+      {
+        "ci_high": 43962.0,
+        "ci_low": 42238.0,
+        "confidence": "high",
+        "raw_text": "43100.0",
+        "source_quality": "digital",
+        "value": 43100.0
+      },
+      {
+        "ci_high": 45084.0,
+        "ci_low": 43316.0,
+        "confidence": "high",
+        "raw_text": "44200.0",
+        "source_quality": "digital",
+        "value": 44200.0
+      },
+      {
+        "ci_high": 44778.0,
+        "ci_low": 43022.0,
+        "confidence": "high",
+        "raw_text": "43900.0",
+        "source_quality": "digital",
+        "value": 43900.0
+      },
+      {
+        "ci_high": 45492.0,
+        "ci_low": 43708.0,
+        "confidence": "high",
+        "raw_text": "44600.0",
+        "source_quality": "digital",
+        "value": 44600.0
+      },
+      {
+        "ci_high": 46002.0,
+        "ci_low": 44198.0,
+        "confidence": "high",
+        "raw_text": "45100.0",
+        "source_quality": "digital",
+        "value": 45100.0
+      }
+    ],
+    "currency_code": "USD",
+    "deletion_cert": "UPLAN-CERT:v1\ndoc=a41119001401f42d514824a6b3b006a63db9892688268293957a01520cfe7f6b\nnonce=ce2310d51768757e\nts=1778241212550\nsig=06356efa786c30b3946c27ba6004fac5387ba9ccea9c04fcd654cf4e38a15888",
+    "deposit_entries": [
+      [
+        0.0,
+        {
+          "ci_high": 1224.0,
+          "ci_low": 1176.0,
+          "confidence": "high",
+          "raw_text": "1200.0",
+          "source_quality": "digital",
+          "value": 1200.0
+        }
+      ],
+      [
+        1.0,
+        {
+          "ci_high": 969.0,
+          "ci_low": 931.0,
+          "confidence": "high",
+          "raw_text": "950.0",
+          "source_quality": "digital",
+          "value": 950.0
+        }
+      ],
+      [
+        2.0,
+        {
+          "ci_high": 1122.0,
+          "ci_low": 1078.0,
+          "confidence": "high",
+          "raw_text": "1100.0",
+          "source_quality": "digital",
+          "value": 1100.0
+        }
+      ],
+      [
+        3.0,
+        {
+          "ci_high": 816.0,
+          "ci_low": 784.0,
+          "confidence": "high",
+          "raw_text": "800.0",
+          "source_quality": "digital",
+          "value": 800.0
+        }
+      ],
+      [
+        4.0,
+        {
+          "ci_high": 1326.0,
+          "ci_low": 1274.0,
+          "confidence": "high",
+          "raw_text": "1300.0",
+          "source_quality": "digital",
+          "value": 1300.0
+        }
+      ],
+      [
+        5.0,
+        {
+          "ci_high": 1071.0,
+          "ci_low": 1029.0,
+          "confidence": "high",
+          "raw_text": "1050.0",
+          "source_quality": "digital",
+          "value": 1050.0
+        }
+      ]
+    ],
+    "document_hash": "a41119001401f42d514824a6b3b006a63db9892688268293957a01520cfe7f6b",
+    "extraction_ms": 2816,
+    "filename": "Affidavit-test.pdf",
+    "i_aff": null,
+    "i_form": null,
+    "i_spon": null,
+    "i_tax": {
+      "ci_high": 71064.0,
+      "ci_low": 60536.0,
+      "confidence": "medium",
+      "raw_text": "",
+      "source_quality": "digital",
+      "value": 65800.0
+    },
+    "name_variants": {
+      "bank_statement": "Arjun Mehta",
+      "tax_return": "Arjun Mehta"
+    },
+    "pages": [
+      {
+        "affidavit_type": null,
+        "balance_series": [
+          {
+            "ci_high": 43656.0,
+            "ci_low": 41944.0,
+            "confidence": "high",
+            "raw_text": "42800.0",
+            "source_quality": "digital",
+            "value": 42800.0
+          },
+          {
+            "ci_high": 43962.0,
+            "ci_low": 42238.0,
+            "confidence": "high",
+            "raw_text": "43100.0",
+            "source_quality": "digital",
+            "value": 43100.0
+          },
+          {
+            "ci_high": 45084.0,
+            "ci_low": 43316.0,
+            "confidence": "high",
+            "raw_text": "44200.0",
+            "source_quality": "digital",
+            "value": 44200.0
+          },
+          {
+            "ci_high": 44778.0,
+            "ci_low": 43022.0,
+            "confidence": "high",
+            "raw_text": "43900.0",
+            "source_quality": "digital",
+            "value": 43900.0
+          },
+          {
+            "ci_high": 45492.0,
+            "ci_low": 43708.0,
+            "confidence": "high",
+            "raw_text": "44600.0",
+            "source_quality": "digital",
+            "value": 44600.0
+          },
+          {
+            "ci_high": 46002.0,
+            "ci_low": 44198.0,
+            "confidence": "high",
+            "raw_text": "45100.0",
+            "source_quality": "digital",
+            "value": 45100.0
+          }
+        ],
+        "currency_code": "USD",
+        "deposit_entries": [
+          [
+            0.0,
+            {
+              "ci_high": 1224.0,
+              "ci_low": 1176.0,
+              "confidence": "high",
+              "raw_text": "1200.0",
+              "source_quality": "digital",
+              "value": 1200.0
+            }
+          ],
+          [
+            1.0,
+            {
+              "ci_high": 969.0,
+              "ci_low": 931.0,
+              "confidence": "high",
+              "raw_text": "950.0",
+              "source_quality": "digital",
+              "value": 950.0
+            }
+          ],
+          [
+            2.0,
+            {
+              "ci_high": 1122.0,
+              "ci_low": 1078.0,
+              "confidence": "high",
+              "raw_text": "1100.0",
+              "source_quality": "digital",
+              "value": 1100.0
+            }
+          ],
+          [
+            3.0,
+            {
+              "ci_high": 816.0,
+              "ci_low": 784.0,
+              "confidence": "high",
+              "raw_text": "800.0",
+              "source_quality": "digital",
+              "value": 800.0
+            }
+          ],
+          [
+            4.0,
+            {
+              "ci_high": 1326.0,
+              "ci_low": 1274.0,
+              "confidence": "high",
+              "raw_text": "1300.0",
+              "source_quality": "digital",
+              "value": 1300.0
+            }
+          ],
+          [
+            5.0,
+            {
+              "ci_high": 1071.0,
+              "ci_low": 1029.0,
+              "confidence": "high",
+              "raw_text": "1050.0",
+              "source_quality": "digital",
+              "value": 1050.0
+            }
+          ]
+        ],
+        "doc_type": null,
+        "i_aff": null,
+        "i_form": null,
+        "i_spon": null,
+        "i_tax": null,
+        "name_string": "Arjun Mehta",
+        "page_number": 1,
+        "page_type": "bank_statement",
+        "source_quality": "digital",
+        "spon_relationship": null,
+        "tax_year": null
+      },
+      {
+        "affidavit_type": null,
+        "balance_series": [],
+        "currency_code": "USD",
+        "deposit_entries": [],
+        "doc_type": null,
+        "i_aff": null,
+        "i_form": null,
+        "i_spon": null,
+        "i_tax": {
+          "ci_high": 71064.0,
+          "ci_low": 60536.0,
+          "confidence": "medium",
+          "raw_text": "",
+          "source_quality": "digital",
+          "value": 65800.0
+        },
+        "name_string": "Arjun Mehta",
+        "page_number": 2,
+        "page_type": "tax_return",
+        "source_quality": "digital",
+        "spon_relationship": null,
+        "tax_year": 2023
+      }
+    ],
+    "raw_purge_confirmed": true,
+    "session_id": "manual-real-doc-test",
+    "source_quality": "digital",
+    "spon_relationship": null,
+    "tax_year": 2023,
+    "total_pages": 2
+  },
+  "reliable_fields": {
+    "balance_closing": 45100.0,
+    "currency_code": "USD",
+    "i_aff": null,
+    "i_form": null,
+    "i_spon": null,
+    "i_tax": 65800.0,
+    "name_variants": {
+      "bank_statement": "Arjun Mehta",
+      "tax_return": "Arjun Mehta"
+    },
+    "spon_relationship": null,
+    "tax_year": 2023
+  },
+  "summary": {
+    "document_hash": "a41119001401f42d514824a6b3b006a63db9892688268293957a01520cfe7f6b",
+    "extraction_ms": 2816,
+    "filename": "Affidavit-test.pdf",
+    "low_confidence": false,
+    "raw_purge_confirmed": true,
+    "source_quality": "digital",
+    "total_pages": 2
+  }
+}

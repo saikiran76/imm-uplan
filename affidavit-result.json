@@ -1,0 +1,79 @@
+{
+  "full_result": {
+    "balance_series": [],
+    "currency_code": "INR",
+    "deletion_cert": "UPLAN-CERT:v1\ndoc=a41119001401f42d514824a6b3b006a63db9892688268293957a01520cfe7f6b\nnonce=b9a4aefa18cde2e7\nts=1778271707165\nsig=5dbe8598dfd7c9f4504f1176cdd9c80f438453a115f1bae2aadd2fd84392c668",
+    "deposit_entries": [],
+    "document_hash": "a41119001401f42d514824a6b3b006a63db9892688268293957a01520cfe7f6b",
+    "extraction_ms": 3854504,
+    "filename": "Affidavit-test.pdf",
+    "i_aff": {
+      "ci_high": 306000.0,
+      "ci_low": 294000.0,
+      "confidence": "high",
+      "raw_text": "",
+      "source_quality": "scan",
+      "value": 300000.0
+    },
+    "i_form": null,
+    "i_spon": null,
+    "i_tax": null,
+    "name_variants": {
+      "affidavit": "KORADA SATYANARAYANA"
+    },
+    "pages": [
+      {
+        "affidavit_type": "Affidavit",
+        "balance_series": [],
+        "currency_code": "INR",
+        "deposit_entries": [],
+        "doc_type": null,
+        "i_aff": {
+          "ci_high": 306000.0,
+          "ci_low": 294000.0,
+          "confidence": "high",
+          "raw_text": "",
+          "source_quality": "scan",
+          "value": 300000.0
+        },
+        "i_form": null,
+        "i_spon": null,
+        "i_tax": null,
+        "name_string": "KORADA SATYANARAYANA",
+        "page_number": 1,
+        "page_type": "affidavit",
+        "source_quality": "scan",
+        "spon_relationship": "Father",
+        "tax_year": null
+      }
+    ],
+    "raw_purge_confirmed": true,
+    "session_id": "manual-real-doc-test",
+    "source_quality": "unknown",
+    "spon_relationship": "Father",
+    "tax_year": null,
+    "total_pages": 2
+  },
+  "reliable_fields": {
+    "balance_closing": null,
+    "currency_code": "INR",
+    "i_aff": 300000.0,
+    "i_form": null,
+    "i_spon": null,
+    "i_tax": null,
+    "name_variants": {
+      "affidavit": "KORADA SATYANARAYANA"
+    },
+    "spon_relationship": "Father",
+    "tax_year": null
+  },
+  "summary": {
+    "document_hash": "a41119001401f42d514824a6b3b006a63db9892688268293957a01520cfe7f6b",
+    "extraction_ms": 3854504,
+    "filename": "Affidavit-test.pdf",
+    "low_confidence": false,
+    "raw_purge_confirmed": true,
+    "source_quality": "unknown",
+    "total_pages": 2
+  }
+}

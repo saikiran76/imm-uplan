@@ -1,0 +1,5 @@
+Pillow
+PyMuPDF
+accelerate
+torch
+transformers>=4.51.0
