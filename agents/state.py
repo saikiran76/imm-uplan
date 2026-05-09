@@ -19,7 +19,21 @@ class MoneyItem(TypedDict, total=False):
     description: str
 
 
+class PolicySource(TypedDict):
+    source_id: str
+    title: str
+    jurisdiction: str
+    visa_type: str
+    excerpt: str
+
+
 class UplanState(TypedDict):
+    # Applicant / policy context
+    visa_type: str
+    destination_jurisdiction: str
+    applicant_income_percentile: Optional[float]
+    currency_normalized: bool
+
     # Populated by extraction layer
     balance_series: list[float]
     deposit_entries: list[tuple[float, float]]
@@ -42,14 +56,20 @@ class UplanState(TypedDict):
     delta_warn: float
     delta_crit: float
     w_late: float
+    kappa: float
+    threshold_trace: dict[str, str]
+    policy_sources: list[PolicySource]
 
     # Agent outputs. LangGraph appends parallel node outputs via reducer.
     findings: Annotated[list[AgentFinding], operator.add]
+    completed_agents: Annotated[list[str], operator.add]
 
     # Synthesis output
     narrative_score: Optional[float]
     human_review_required: bool
     synthesis_trace: Optional[str]
+    rejection_case: Optional[str]
+    rebuttal_case: Optional[str]
 
     # Privacy gate
     raw_purge_confirmed: bool

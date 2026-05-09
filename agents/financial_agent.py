@@ -42,7 +42,7 @@ def run_financial_agent(state: UplanState) -> dict:
             t_req=t_req,
         )
 
-    return {"findings": findings}
+    return {"findings": findings, "completed_agents": ["financial_agent"]}
 
 
 def _evaluate_balance_series(

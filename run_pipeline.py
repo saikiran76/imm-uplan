@@ -39,7 +39,13 @@ def money_items(rows: list[dict], amount_key: str = "amount") -> list[dict]:
     return items
 
 
-def build_state_from_payload(payload: dict[str, Any], t_req: float) -> dict[str, Any]:
+def build_state_from_payload(
+    payload: dict[str, Any],
+    t_req: float,
+    visa_type: str,
+    destination_jurisdiction: str,
+    applicant_income_percentile: float | None,
+) -> dict[str, Any]:
     full = payload.get("full_result", {})
     fields = payload.get("reliable_fields", {})
 
@@ -53,6 +59,10 @@ def build_state_from_payload(payload: dict[str, Any], t_req: float) -> dict[str,
     ]
 
     return {
+        "visa_type": visa_type,
+        "destination_jurisdiction": destination_jurisdiction,
+        "applicant_income_percentile": applicant_income_percentile,
+        "currency_normalized": False,
         "balance_series": balance_series,
         "deposit_entries": deposit_entries,
         "t_req": t_req,
@@ -67,15 +77,21 @@ def build_state_from_payload(payload: dict[str, Any], t_req: float) -> dict[str,
         "income_sources": money_items(fields.get("income_sources", []), amount_key="annual_amount"),
         "movable_assets": money_items(fields.get("movable_assets", [])),
         "properties": money_items(fields.get("properties", []), amount_key="value"),
-        "alpha": 0.25,
-        "epsilon": 0.10,
-        "delta_warn": 2.5,
-        "delta_crit": 5.0,
-        "w_late": 1.5,
+        "alpha": 0.0,
+        "epsilon": 0.0,
+        "delta_warn": 0.0,
+        "delta_crit": 0.0,
+        "w_late": 0.0,
+        "kappa": 0.0,
+        "threshold_trace": {},
+        "policy_sources": [],
         "findings": [],
+        "completed_agents": [],
         "narrative_score": None,
         "human_review_required": False,
         "synthesis_trace": None,
+        "rejection_case": None,
+        "rebuttal_case": None,
         "raw_purge_confirmed": bool(full.get("raw_purge_confirmed") or payload.get("summary", {}).get("raw_purge_confirmed")),
     }
 
@@ -111,6 +127,9 @@ async def main() -> None:
     parser.add_argument("--extraction-json", type=Path, help="Existing run_real_extraction JSON output.")
     parser.add_argument("--out", type=Path, help="Optional path to write full pipeline JSON.")
     parser.add_argument("--t-req", type=float, default=800000.0)
+    parser.add_argument("--visa-type", default="student")
+    parser.add_argument("--destination-jurisdiction", default="JP")
+    parser.add_argument("--applicant-income-percentile", type=float)
     parser.add_argument("--session-id", default="manual-layer1-test")
     parser.add_argument("--backend", choices=["mock", "hf"], default="hf")
     parser.add_argument("--model-path", default="Qwen/Qwen2.5-VL-3B-Instruct")
@@ -130,7 +149,13 @@ async def main() -> None:
     else:
         raise SystemExit("Provide either --extraction-json or --pdf.")
 
-    state = build_state_from_payload(payload, t_req=args.t_req)
+    state = build_state_from_payload(
+        payload,
+        t_req=args.t_req,
+        visa_type=args.visa_type,
+        destination_jurisdiction=args.destination_jurisdiction,
+        applicant_income_percentile=args.applicant_income_percentile,
+    )
     output = build_graph().invoke(state)
     result = {
         "summary": payload.get("summary", {}),

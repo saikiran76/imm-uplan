@@ -59,7 +59,7 @@ def run_tax_agent(state: UplanState) -> dict:
                 requires_human_review=False,
             ))
 
-    return {"findings": findings}
+    return {"findings": findings, "completed_agents": ["tax_agent"]}
 
 
 def _affidavit_income(state: UplanState) -> float | None:
