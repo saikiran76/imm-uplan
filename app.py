@@ -225,7 +225,8 @@ def run_backend(files: list[Any] | None) -> dict[str, Any]:
             handle = open(path, "rb")
             handles.append(handle)
             upload_files.append(("files", (Path(path).name, handle, "application/pdf")))
-        response = requests.post(AMD_ENDPOINT, files=upload_files, headers=headers, timeout=300)
+        url = f"{AMD_ENDPOINT.rstrip('/')}/extract"
+        response = requests.post(url, files=upload_files, headers=headers, timeout=300)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as exc:
