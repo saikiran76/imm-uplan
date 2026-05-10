@@ -11,18 +11,15 @@ import gradio as gr
 
 USE_LIVE_BACKEND = os.getenv("USE_LIVE_BACKEND", "false").lower() == "true"
 AMD_ENDPOINT = os.getenv("AMD_ENDPOINT", "http://localhost:8000/extract")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 UPLAN_API_KEY = os.getenv("UPLAN_API_KEY", "")
 SAMPLE_PATH = Path(__file__).parent / "sample_outputs" / "demo_result.json"
 DEMO_RESULT = json.loads(SAMPLE_PATH.read_text(encoding="utf-8")) if SAMPLE_PATH.exists() else {}
 
 
 CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 .gradio-container {
   max-width: 1440px !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
 }
 #uplan-header {
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -195,9 +192,13 @@ def next_steps(findings: list[dict[str, Any]]) -> list[dict[str, str]]:
 
 
 def run_backend(files: list[Any] | None) -> dict[str, Any]:
-    if not USE_LIVE_BACKEND or not files:
-        time.sleep(0.8)
-        return DEMO_RESULT
+    if not files:
+        return backend_unavailable_result("No files were uploaded.")
+
+    if not USE_LIVE_BACKEND:
+        return backend_unavailable_result(
+            "Live backend is disabled. Set USE_LIVE_BACKEND=true and AMD_ENDPOINT to the Flask /extract URL."
+        )
 
     import requests
 
@@ -215,9 +216,53 @@ def run_backend(files: list[Any] | None) -> dict[str, Any]:
         response = requests.post(AMD_ENDPOINT, files=upload_files, headers=headers, timeout=300)
         response.raise_for_status()
         return response.json()
+    except requests.RequestException as exc:
+        return backend_unavailable_result(
+            f"Live backend did not respond at {AMD_ENDPOINT}: {exc}"
+        )
     finally:
         for handle in handles:
             handle.close()
+
+
+def backend_unavailable_result(message: str) -> dict[str, Any]:
+    return {
+        "applicant_name": "Live backend unavailable",
+        "sponsor_name": "Not analysed",
+        "sponsor_relationship": None,
+        "currency_code": "",
+        "t_req": 800000,
+        "documents_parsed": [
+            {"type": "upload_received", "pages": 0, "quality": "not_processed", "status": "backend_offline"}
+        ],
+        "reliable_fields": {
+            "currency_code": None,
+            "name_variants": {},
+            "financial_accounts": [],
+            "income_sources": [],
+            "properties": [],
+            "movable_assets": [],
+        },
+        "agent_findings": [
+            {
+                "agent_id": "system",
+                "rule_id": "LIVE_BACKEND_UNAVAILABLE",
+                "severity": "critical",
+                "message": message,
+                "requires_human_review": True,
+            }
+        ],
+        "narrative_synthesis": {
+            "narrative_score": 0.0,
+            "human_review_required": True,
+            "compound_flags": ["Uploaded PDFs were not analysed because the live backend is offline or disabled."],
+            "synthesis_trace": "No extraction or agent graph run occurred for this upload.",
+        },
+        "next_steps": [
+            {"priority": "critical", "action": "Start the AMD Flask backend and set USE_LIVE_BACKEND=true in the HF Space."}
+        ],
+        "backend_status": "offline",
+    }
 
 
 def build_dashboard_html(raw_result: dict[str, Any]) -> str:
@@ -242,7 +287,7 @@ def build_dashboard_html(raw_result: dict[str, Any]) -> str:
     card_border = "rgba(255,255,255,0.08)"
 
     html = f"""
-<div style='font-family:Inter,Arial,sans-serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85)'>
+<div style='font-family:Georgia,"Times New Roman",serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85)'>
   <div style='background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(167,139,250,0.08));border:1px solid {card_border};border-radius:10px;padding:16px;margin-bottom:12px'>
     <div style='display:flex;justify-content:space-between;align-items:center'>
       <b style='color:#e2e8f0'>Readiness overview</b>{badge(overall, overall_sev)}
@@ -320,48 +365,25 @@ def card(title: str, body: str, bg: str = "rgba(255,255,255,0.04)", border: str 
     return f"<div style='background:{bg};border:1px solid {border};border-radius:10px;padding:16px;margin-bottom:12px;backdrop-filter:blur(8px)'><b style='color:#e2e8f0'>{title}</b><div style='margin-top:9px'>{body}</div></div>"
 
 
-SYSTEM_PROMPT = """You are Uplan's immigration document consultant AI.
-
-Use the supplied document analysis to explain risks, missing evidence, and next steps.
-Do not give legal advice. Keep replies concise and direct.
-
-Analysis:
-{analysis}
-"""
-
-
 def chat_response(message: str, history: list, result_state: dict) -> tuple[list, str]:
     result = normalize_result(result_state)
     if not message:
         return history, ""
 
-    if not ANTHROPIC_API_KEY:
-        findings = result.get("agent_findings", [])
-        first = findings[0]["message"] if findings else "Upload bank statements and tax returns to enable cross-document checks."
+    findings = result.get("agent_findings", [])
+    synthesis = result.get("narrative_synthesis", {})
+    if findings:
+        first = findings[0]["message"]
         reply = (
-            "Consultant chat is in local demo mode because ANTHROPIC_API_KEY is not set. "
-            f"The main issue I see is: {first} "
-            "The dashboard on the right will update as richer packet analysis is loaded."
+            f"The main issue is: {first} "
+            f"The current readiness score is {int(float(synthesis.get('narrative_score') or 0) * 100)}%. "
+            "Use the next steps panel to resolve the highest-severity item first."
         )
     else:
-        try:
-            import anthropic
-
-            client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-            api_messages = []
-            for msg in history:
-                if msg.get("role") and msg.get("content"):
-                    api_messages.append({"role": msg["role"], "content": msg["content"]})
-            api_messages.append({"role": "user", "content": message})
-            response = client.messages.create(
-                model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
-                max_tokens=500,
-                system=SYSTEM_PROMPT.format(analysis=json.dumps(result, indent=2)[:7000]),
-                messages=api_messages,
-            )
-            reply = response.content[0].text
-        except Exception as exc:
-            reply = f"Consultant chat is temporarily unavailable: {exc}"
+        reply = (
+            "No agent findings are available yet. Run the demo packet or connect the live AMD backend "
+            "so the uploaded documents can be extracted and evaluated."
+        )
 
     return history + [{"role": "user", "content": message}, {"role": "assistant", "content": reply}], ""
 
@@ -414,7 +436,7 @@ def build_ui():
         with gr.Row(equal_height=False):
             with gr.Column(scale=1, min_width=270):
                 gr.Markdown("### Agent tools")
-                demo_toggle = gr.Checkbox(label="Demo mode", value=True, info="Uses sample analysis for HF CPU Space.")
+                demo_toggle = gr.Checkbox(label="Demo mode", value=True, info="Uses a clearly marked sample analysis. Turn off for live AMD backend.")
                 upload_box = gr.File(label="Upload PDF packet", file_types=[".pdf"], file_count="multiple", visible=False)
                 demo_toggle.change(lambda enabled: gr.update(visible=not enabled), demo_toggle, upload_box)
                 analyse_btn = gr.Button("Analyse packet", variant="primary")
@@ -427,7 +449,7 @@ def build_ui():
                     label="Consultant",
                     height=560,
                     show_label=False,
-                    value=[{"role": "assistant", "content": "Welcome to Uplan. Load the demo or upload a packet, and I will walk through the agent findings."}],
+                    value=[{"role": "assistant", "content": "Welcome to Uplan. Load the sample demo or upload a packet when the AMD backend is online. The dashboard will show whether the result is live or backend-offline."}],
                 )
                 with gr.Row():
                     chat_input = gr.Textbox(placeholder="Ask about risks, missing evidence, or next steps...", show_label=False, container=False, scale=5)
@@ -449,6 +471,6 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
-        theme=gr.themes.Soft(primary_hue="blue", font=[gr.themes.GoogleFont("Inter"), "Arial", "sans-serif"]),
+        theme=gr.themes.Soft(primary_hue="blue", font=["Georgia", "Times New Roman", "serif"]),
         css=CSS,
     )
