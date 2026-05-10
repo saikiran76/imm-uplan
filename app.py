@@ -9,8 +9,9 @@ from typing import Any
 import gradio as gr
 
 
-USE_LIVE_BACKEND = os.getenv("USE_LIVE_BACKEND", "false").lower() == "true"
-AMD_ENDPOINT = os.getenv("AMD_ENDPOINT", "http://localhost:8000/extract")
+# USE_LIVE_BACKEND = os.getenv("USE_LIVE_BACKEND", "false").lower() == "true"
+USE_LIVE_BACKEND = True
+AMD_ENDPOINT = os.getenv("AMD_ENDPOINT", "http://165.245.142.235:8000")
 UPLAN_API_KEY = os.getenv("UPLAN_API_KEY", "")
 SAMPLE_PATH = Path(__file__).parent / "sample_outputs" / "demo_result.json"
 DEMO_RESULT = json.loads(SAMPLE_PATH.read_text(encoding="utf-8")) if SAMPLE_PATH.exists() else {}
