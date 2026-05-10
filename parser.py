@@ -207,29 +207,33 @@ class ExtractionParser:
         r.currency_code  = d.get("currency_code")
         r.name_string    = d.get("account_holder_name")
 
-        # Monthly closing balances
-        for entry in d.get("monthly_closing_balances", []):
+        # New flat schema: financial_indicators contains the ledger figures
+        fi = d.get("financial_indicators", {}) or {}
+        r.financial_indicators = fi
+        r.adversarial_flags = _as_list(d.get("adversarial_flags"))
+
+        # Map closing_balance into balance_series so reliable_fields picks it up
+        closing = fi.get("closing_balance")
+        if closing is not None:
             w = _wrap(
-                value=entry.get("closing_balance"),
-                field_conf_str=entry.get("confidence", "low"),
+                value=closing,
+                field_conf_str="high",
                 mean_logprob=lp,
                 source_quality=q,
-                raw_text=str(entry.get("closing_balance", "")),
+                raw_text=str(closing),
             )
             if w:
                 r.balance_series.append(w)
 
-        # Deposit entries
-        # month_offset is computed relative to the first month of the series.
-        # Here we use a simple index since we don't have the period start parsed.
-        # The merger will sort by date when full date parsing is implemented.
+        # Deposit entries — new schema uses amount_inr, no confidence field
         for i, dep in enumerate(d.get("deposits", [])):
+            amount = dep.get("amount_inr") or dep.get("amount")
             w = _wrap(
-                value=dep.get("amount"),
-                field_conf_str=dep.get("confidence", "low"),
+                value=amount,
+                field_conf_str="high",
                 mean_logprob=lp,
                 source_quality=q,
-                raw_text=str(dep.get("amount", "")),
+                raw_text=str(amount or ""),
             )
             if w:
                 r.deposit_entries.append((float(i), w))
@@ -282,16 +286,34 @@ class ExtractionParser:
         except (TypeError, ValueError):
             r.tax_year = None
 
-        # Prefer taxable_income over gross_income as the canonical i_tax
-        taxable = d.get("taxable_income", {}) or {}
-        gross   = d.get("gross_income", {}) or {}
+        # New flat schema: financial_indicators contains the income figures
+        fi = d.get("financial_indicators", {}) or {}
+        r.financial_indicators = fi
+        r.adversarial_flags = _as_list(d.get("adversarial_flags"))
 
-        r.i_tax = _wrap(
-            value=taxable.get("value") or gross.get("value"),
-            field_conf_str=taxable.get("confidence") or gross.get("confidence", "low"),
-            mean_logprob=lp,
-            source_quality=q,
-        )
+        # Map taxable_income (or gross_total_income) into i_tax
+        taxable = fi.get("taxable_income") or fi.get("gross_total_income")
+        if taxable is not None:
+            r.i_tax = _wrap(
+                value=taxable,
+                field_conf_str="high",
+                mean_logprob=lp,
+                source_quality=q,
+            )
+
+        # Map income_streams into income_sources
+        for stream in _as_list(d.get("income_streams")):
+            if not isinstance(stream, dict):
+                continue
+            r.income_sources.append(IncomeSource(
+                source=stream.get("source"),
+                annual_amount=_wrap(
+                    value=stream.get("amount_inr"),
+                    field_conf_str="high",
+                    mean_logprob=lp,
+                    source_quality=q,
+                )
+            ))
 
     def _parse_affidavit(
         self,

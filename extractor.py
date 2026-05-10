@@ -475,6 +475,7 @@ class DocumentExtractor:
         Raw bytes and PIL images are zeroed before this method returns.
         """
         pdf_path = Path(pdf_path)
+        self.filename = pdf_path.name
         session_id = session_id or secrets.token_hex(8)
         start_ms = int(time.time() * 1000)
 
