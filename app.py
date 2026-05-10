@@ -18,52 +18,209 @@ DEMO_RESULT = json.loads(SAMPLE_PATH.read_text(encoding="utf-8")) if SAMPLE_PATH
 
 
 CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;450;500;600;700&display=swap');
+
+:root {
+  --uplan-bg: #0c0d10;
+  --uplan-surface: rgba(255,255,255,0.035);
+  --uplan-surface-hover: rgba(255,255,255,0.06);
+  --uplan-border: rgba(255,255,255,0.07);
+  --uplan-border-accent: rgba(96,165,250,0.2);
+  --uplan-text: rgb(219,216,211);
+  --uplan-text-muted: rgba(219,216,211,0.55);
+  --uplan-text-dim: rgba(219,216,211,0.35);
+  --uplan-accent-1: #60a5fa;
+  --uplan-accent-2: #a78bfa;
+  --uplan-accent-3: #818cf8;
+  --uplan-green: #34d399;
+  --uplan-amber: #fbbf24;
+  --uplan-red: #f87171;
+  --uplan-radius: 14px;
+  --uplan-radius-sm: 10px;
+  --font-main: "Google Sans Flex", "Google Sans", "Inter", sans-serif;
+}
+
+/* ── Global Reset ────────────────────────── */
 .gradio-container {
   max-width: 1440px !important;
-  font-family: Georgia, 'Times New Roman', serif !important;
+  font-family: var(--font-main) !important;
+  font-weight: 450 !important;
+  color: var(--uplan-text) !important;
+  background: var(--uplan-bg) !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+.gradio-container .dark {
+  background: var(--uplan-bg) !important;
+}
+
+/* ── Header ──────────────────────────────── */
 #uplan-header {
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  padding: 16px 0 20px;
-  margin-bottom: 16px;
+  border-bottom: 1px solid var(--uplan-border);
+  padding: 28px 0 24px;
+  margin-bottom: 20px;
+  position: relative;
+}
+#uplan-header::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--uplan-accent-1), var(--uplan-accent-2));
+  border-radius: 2px;
 }
 #uplan-header h1 {
   margin: 0;
-  font-size: 28px;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  font-size: 54px;
+  line-height: 56px;
+  letter-spacing: -1.5px;
+  background: linear-gradient(135deg, var(--uplan-accent-1), var(--uplan-accent-2), var(--uplan-accent-3));
+  background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   font-weight: 700;
+  animation: uplan-shimmer 6s ease-in-out infinite;
+}
+@keyframes uplan-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 #uplan-header p {
-  margin: 6px 0 0;
-  color: rgba(255,255,255,0.55);
-  font-size: 13px;
+  margin: 10px 0 0;
+  color: var(--uplan-text-muted);
+  font-size: 15px;
+  font-weight: 400;
+  max-width: 580px;
+  letter-spacing: 0.01em;
 }
+
+/* ── Tool cards (sidebar) ────────────────── */
 .tool-card {
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px;
-  padding: 14px;
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(8px);
-  color: rgba(255,255,255,0.85);
+  border: 1px solid var(--uplan-border);
+  border-radius: var(--uplan-radius);
+  padding: 18px 20px;
+  background: var(--uplan-surface);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  color: var(--uplan-text);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.tool-card:hover {
+  border-color: var(--uplan-border-accent);
+  box-shadow: 0 0 24px rgba(96,165,250,0.06);
 }
 .tool-card b {
   color: rgba(255,255,255,0.95);
+  font-weight: 600;
 }
 .tool-card hr {
   border: 0;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  margin: 10px 0;
+  border-top: 1px solid var(--uplan-border);
+  margin: 14px 0;
 }
-/* Chat input fix */
+
+/* ── Chat styling ────────────────────────── */
 .gradio-container textarea {
-  min-height: 44px !important;
+  min-height: 48px !important;
+  font-family: var(--font-main) !important;
+  font-weight: 450 !important;
+  border-radius: var(--uplan-radius-sm) !important;
+  border: 1px solid var(--uplan-border) !important;
+  background: var(--uplan-surface) !important;
+  transition: border-color 0.25s ease !important;
 }
-/* Better spacing for chat row */
+.gradio-container textarea:focus {
+  border-color: var(--uplan-accent-1) !important;
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.1) !important;
+}
 .gradio-container .gap {
-  gap: 8px;
+  gap: 10px;
+}
+
+/* ── Buttons ─────────────────────────────── */
+.gradio-container button.primary {
+  background: linear-gradient(135deg, var(--uplan-accent-1), var(--uplan-accent-2)) !important;
+  border: none !important;
+  border-radius: var(--uplan-radius-sm) !important;
+  font-family: var(--font-main) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding: 10px 24px !important;
+  transition: transform 0.2s ease, box-shadow 0.25s ease !important;
+  box-shadow: 0 4px 16px rgba(96,165,250,0.15) !important;
+}
+.gradio-container button.primary:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 28px rgba(96,165,250,0.25) !important;
+}
+.gradio-container button.secondary {
+  border-radius: var(--uplan-radius-sm) !important;
+  font-family: var(--font-main) !important;
+  font-weight: 500 !important;
+  border: 1px solid var(--uplan-border) !important;
+  background: var(--uplan-surface) !important;
+  transition: background 0.2s ease, border-color 0.2s ease !important;
+}
+.gradio-container button.secondary:hover {
+  background: var(--uplan-surface-hover) !important;
+  border-color: var(--uplan-accent-1) !important;
+}
+
+/* ── Chatbot bubble override ─────────────── */
+.gradio-container .chatbot .message {
+  font-family: var(--font-main) !important;
+  font-weight: 450 !important;
+  border-radius: var(--uplan-radius) !important;
+}
+
+/* ── Labels & markdown ───────────────────── */
+.gradio-container label, .gradio-container .label-wrap span {
+  font-family: var(--font-main) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em;
+}
+.gradio-container .prose h3, .gradio-container .markdown h3 {
+  font-family: var(--font-main) !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  letter-spacing: -0.3px;
+  color: var(--uplan-text) !important;
+}
+
+/* ── File upload ─────────────────────────── */
+.gradio-container .upload-area {
+  border: 1px dashed var(--uplan-border) !important;
+  border-radius: var(--uplan-radius) !important;
+  background: var(--uplan-surface) !important;
+  transition: border-color 0.25s ease !important;
+}
+.gradio-container .upload-area:hover {
+  border-color: var(--uplan-accent-1) !important;
+}
+
+/* ── Scrollbar ───────────────────────────── */
+.gradio-container ::-webkit-scrollbar { width: 6px; }
+.gradio-container ::-webkit-scrollbar-track { background: transparent; }
+.gradio-container ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+}
+.gradio-container ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+/* ── Animations ──────────────────────────── */
+@keyframes uplan-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.uplan-dash-card {
+  animation: uplan-fade-in 0.4s ease-out both;
 }
 """
 
@@ -79,32 +236,40 @@ SEV_COLOR = {
 def badge(text: str, severity: str) -> str:
     bg, color = SEV_COLOR.get(severity, ("rgba(255,255,255,0.06)", "rgba(255,255,255,0.6)"))
     return (
-        f"<span style='display:inline-block;padding:3px 10px;border-radius:999px;"
+        f"<span style='display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;"
         f"font-size:11px;font-weight:600;background:{bg};color:{color};"
-        f"border:1px solid {color}22;"
-        f"margin:2px 3px 2px 0'>{text}</span>"
+        f"border:1px solid {color}22;letter-spacing:0.03em;"
+        f"font-family:\"Google Sans Flex\",\"Inter\",sans-serif;"
+        f"backdrop-filter:blur(8px);"
+        f"margin:2px 4px 2px 0;transition:all 0.2s ease'>{text}</span>"
     )
 
 
 def money(value: Any, currency: str = "") -> str:
     if value is None:
-        return "<span style='color:rgba(255,255,255,0.3)'>not found</span>"
+        return "<span style='color:rgba(219,216,211,0.3);font-style:italic;font-size:13px'>not found</span>"
     try:
-        return f"<b style='color:#e2e8f0'>{currency} {float(value):,.0f}</b>"
+        return (
+            f"<b style='color:rgb(219,216,211);font-weight:600;font-size:16px;"
+            f"font-family:\"Google Sans Flex\",\"Inter\",sans-serif'>"
+            f"{currency} {float(value):,.0f}</b>"
+        )
     except (TypeError, ValueError):
-        return f"<b style='color:#e2e8f0'>{value}</b>"
+        return f"<b style='color:rgb(219,216,211);font-weight:600'>{value}</b>"
 
 
 def score_bar(score: float) -> str:
     pct = max(0, min(100, int(score * 100)))
     color = "#f87171" if pct < 50 else "#fbbf24" if pct < 75 else "#34d399"
+    glow = f"0 0 12px {color}44"
     return f"""
-<div style='margin-top:10px'>
-  <div style='display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;color:rgba(255,255,255,0.7)'>
-    <span>Narrative coherence</span><b style='color:{color}'>{pct}%</b>
+<div style='margin-top:14px'>
+  <div style='display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;color:rgba(219,216,211,0.6);font-family:"Google Sans Flex","Inter",sans-serif'>
+    <span style='font-weight:500'>Narrative coherence</span>
+    <b style='color:{color};font-size:18px;font-weight:700'>{pct}<span style='font-size:12px;font-weight:500;opacity:0.7'>%</span></b>
   </div>
-  <div style='height:8px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden'>
-    <div style='height:8px;width:{pct}%;background:linear-gradient(90deg,{color}cc,{color});border-radius:999px;transition:width 0.5s ease'></div>
+  <div style='height:6px;background:rgba(255,255,255,0.06);border-radius:999px;overflow:hidden;position:relative'>
+    <div style='height:6px;width:{pct}%;background:linear-gradient(90deg,{color}99,{color});border-radius:999px;box-shadow:{glow};transition:width 0.8s cubic-bezier(0.4,0,0.2,1)'></div>
   </div>
 </div>
 """
@@ -285,7 +450,7 @@ def backend_unavailable_result(message: str) -> dict[str, Any]:
 def build_dashboard_html(raw_result: dict[str, Any]) -> str:
     result = normalize_result(raw_result)
     if not result:
-        return "<p style='color:rgba(255,255,255,0.4);padding:16px'>Upload documents or run demo mode to begin.</p>"
+        return "<div style='text-align:center;padding:48px 16px;color:rgba(219,216,211,0.35);font-family:\"Google Sans Flex\",\"Inter\",sans-serif'><div style='font-size:40px;margin-bottom:12px;opacity:0.4'>📄</div><p style='font-size:15px;font-weight:450'>Upload documents or run demo mode to begin.</p></div>"
 
     fields = result.get("reliable_fields", {})
     synthesis = result.get("narrative_synthesis", {})
@@ -299,96 +464,129 @@ def build_dashboard_html(raw_result: dict[str, Any]) -> str:
     account_total = sum(float(item.get("amount") or 0) for item in fields.get("financial_accounts", []))
     income_total = sum(float(item.get("annual_amount") or 0) for item in fields.get("income_sources", []))
 
-    label_style = "color:rgba(255,255,255,0.45);font-size:11px;text-transform:uppercase;letter-spacing:0.5px"
-    card_bg = "rgba(255,255,255,0.04)"
-    card_border = "rgba(255,255,255,0.08)"
+    font = '"Google Sans Flex","Inter",sans-serif'
+    label_style = f"color:rgba(219,216,211,0.4);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;font-family:{font}"
+    card_bg = "rgba(255,255,255,0.03)"
+    card_border = "rgba(255,255,255,0.07)"
+
+    human_review_html = ""
+    if synthesis.get("human_review_required"):
+        human_review_html = f"<div style='display:flex;align-items:center;gap:8px;font-size:12px;color:#f87171;margin-top:10px;padding:8px 12px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.12);border-radius:8px;font-family:{font}'><span style='font-size:16px'>⚠</span> <span style='font-weight:500'>Human review required</span></div>"
+
+    text_primary = "rgb(219,216,211)"
+    accent_bg = "linear-gradient(135deg,rgba(96,165,250,0.06),rgba(167,139,250,0.06))"
+    sub_card = "background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:12px 14px"
 
     html = f"""
-<div style='font-family:Georgia,"Times New Roman",serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85)'>
-  <div style='background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(167,139,250,0.08));border:1px solid {card_border};border-radius:10px;padding:16px;margin-bottom:12px'>
+<div style='font-family:{font};font-weight:450;font-size:14px;line-height:1.6;color:{text_primary}'>
+
+  <div class='uplan-dash-card' style='background:{accent_bg};border:1px solid {card_border};border-radius:14px;padding:20px;margin-bottom:14px;backdrop-filter:blur(20px)'>
     <div style='display:flex;justify-content:space-between;align-items:center'>
-      <b style='color:#e2e8f0'>Readiness overview</b>{badge(overall, overall_sev)}
+      <div style='display:flex;align-items:center;gap:10px'>
+        <span style='font-size:20px'>📊</span>
+        <b style='color:{text_primary};font-size:15px;font-weight:600'>Readiness overview</b>
+      </div>
+      {badge(overall, overall_sev)}
     </div>
     {score_bar(score)}
-    {"<div style='font-size:12px;color:#f87171;margin-top:8px'>⚠ Human review required</div>" if synthesis.get("human_review_required") else ""}
+    {human_review_html}
   </div>
 
-  <div style='background:{card_bg};border:1px solid {card_border};border-radius:10px;padding:16px;margin-bottom:12px'>
-    <b style='color:#e2e8f0'>Parties</b>
-    <div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px'>
-      <div><span style='{label_style}'>Applicant</span><br><b style='color:#e2e8f0'>{result.get("applicant_name") or fields.get("beneficiary_name") or "not found"}</b></div>
-      <div><span style='{label_style}'>Sponsor</span><br><b style='color:#e2e8f0'>{result.get("sponsor_name") or "not found"}</b></div>
+  <div class='uplan-dash-card' style='background:{card_bg};border:1px solid {card_border};border-radius:14px;padding:20px;margin-bottom:14px;backdrop-filter:blur(16px)'>
+    <div style='display:flex;align-items:center;gap:10px;margin-bottom:14px'>
+      <span style='font-size:18px'>👤</span>
+      <b style='color:{text_primary};font-size:15px;font-weight:600'>Parties</b>
     </div>
-    <div style='margin-top:8px;color:rgba(255,255,255,0.6)'>Relationship: <b style='color:#e2e8f0'>{result.get("sponsor_relationship") or fields.get("spon_relationship") or "not found"}</b></div>
+    <div style='display:grid;grid-template-columns:1fr 1fr;gap:14px'>
+      <div style='{sub_card}'>
+        <span style='{label_style}'>Applicant</span>
+        <div style='margin-top:6px;font-weight:500;color:{text_primary}'>{result.get("applicant_name") or fields.get("beneficiary_name") or "not found"}</div>
+      </div>
+      <div style='{sub_card}'>
+        <span style='{label_style}'>Sponsor</span>
+        <div style='margin-top:6px;font-weight:500;color:{text_primary}'>{result.get("sponsor_name") or "not found"}</div>
+      </div>
+    </div>
+    <div style='margin-top:10px;color:rgba(219,216,211,0.5);font-size:13px'>Relationship: <b style='color:{text_primary};font-weight:500'>{result.get("sponsor_relationship") or fields.get("spon_relationship") or "not found"}</b></div>
   </div>
 
-  <div style='background:{card_bg};border:1px solid {card_border};border-radius:10px;padding:16px;margin-bottom:12px'>
-    <b style='color:#e2e8f0'>Financial summary</b>
-    <div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px'>
-      <div><span style='{label_style}'>Required funds</span><br>{money(t_req, currency)}</div>
-      <div><span style='{label_style}'>Liquid / deposit evidence</span><br>{money(account_total or fields.get("balance_closing"), currency)}</div>
-      <div><span style='{label_style}'>Affidavit income</span><br>{money(fields.get("i_aff") or income_total, currency)}</div>
-      <div><span style='{label_style}'>Tax verified income</span><br>{money(fields.get("i_tax"), currency)}</div>
+  <div class='uplan-dash-card' style='background:{card_bg};border:1px solid {card_border};border-radius:14px;padding:20px;margin-bottom:14px;backdrop-filter:blur(16px)'>
+    <div style='display:flex;align-items:center;gap:10px;margin-bottom:14px'>
+      <span style='font-size:18px'>💰</span>
+      <b style='color:{text_primary};font-size:15px;font-weight:600'>Financial summary</b>
+    </div>
+    <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px'>
+      <div style='{sub_card}'><span style='{label_style}'>Required funds</span><div style='margin-top:6px'>{money(t_req, currency)}</div></div>
+      <div style='{sub_card}'><span style='{label_style}'>Liquid / deposit evidence</span><div style='margin-top:6px'>{money(account_total or fields.get("balance_closing"), currency)}</div></div>
+      <div style='{sub_card}'><span style='{label_style}'>Affidavit income</span><div style='margin-top:6px'>{money(fields.get("i_aff") or income_total, currency)}</div></div>
+      <div style='{sub_card}'><span style='{label_style}'>Tax verified income</span><div style='margin-top:6px'>{money(fields.get("i_tax"), currency)}</div></div>
     </div>
   </div>
 """
 
     if docs:
         rows = "".join(
-            f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)'>"
-            f"<span style='color:rgba(255,255,255,0.8)'>{doc.get('type','unknown').replace('_',' ').title()}</span>"
-            f"<span style='color:rgba(255,255,255,0.45)'>{doc.get('pages',0)}p · {doc.get('quality','unknown')} · {badge(doc.get('status','seen'), 'pass')}</span></div>"
+            f"<div style='display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)'>"
+            f"<span style='color:rgb(219,216,211);font-weight:500'>{doc.get('type','unknown').replace('_',' ').title()}</span>"
+            f"<span style='display:flex;align-items:center;gap:8px;color:rgba(219,216,211,0.4);font-size:12px'>{doc.get('pages',0)}p · {doc.get('quality','unknown')} {badge(doc.get('status','seen'), 'pass')}</span></div>"
             for doc in docs
         )
-        html += card("Documents", rows)
+        html += card("📑 Documents", rows)
 
     if fields.get("name_variants"):
         rows = "".join(
-            f"<div style='font-size:12px;color:rgba(255,255,255,0.7)'><span style='color:rgba(255,255,255,0.4)'>{key.replace('_',' ').title()}</span>: <span style='color:#e2e8f0'>{value}</span></div>"
+            f"<div style='font-size:13px;color:rgba(219,216,211,0.6);padding:4px 0'><span style='color:rgba(219,216,211,0.35);font-weight:500'>{key.replace('_',' ').title()}</span>: <span style='color:rgb(219,216,211);font-weight:500'>{value}</span></div>"
             for key, value in fields["name_variants"].items()
         )
-        html += card("Name consistency", rows)
+        html += card("🔗 Name consistency", rows)
 
     if findings:
         rows = "".join(
-            f"<div style='padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)'>"
-            f"<div><b style='color:#e2e8f0'>{finding.get('rule_id','rule').replace('_',' ').title()}</b> {badge(finding.get('severity','info').title(), finding.get('severity','info'))}</div>"
-            f"<div style='font-size:12px;color:rgba(255,255,255,0.55);margin-top:3px'>{finding.get('message','')}</div>"
+            f"<div style='padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)'>"
+            f"<div style='display:flex;align-items:center;gap:8px'><b style='color:rgb(219,216,211);font-weight:600'>{finding.get('rule_id','rule').replace('_',' ').title()}</b> {badge(finding.get('severity','info').title(), finding.get('severity','info'))}</div>"
+            f"<div style='font-size:12px;color:rgba(219,216,211,0.45);margin-top:4px;line-height:1.5'>{finding.get('message','')}</div>"
             f"</div>"
             for finding in findings
         )
-        html += card("Agent findings", rows)
+        html += card("🔍 Agent findings", rows)
 
     if synthesis.get("compound_flags"):
-        rows = "".join(f"<div style='font-size:12px;padding:4px 0;color:rgba(255,255,255,0.75)'>{item}</div>" for item in synthesis["compound_flags"])
-        html += card("Cross-document risks", rows, bg="rgba(245,158,11,0.08)", border="rgba(245,158,11,0.2)")
+        rows = "".join(f"<div style='font-size:13px;padding:5px 0;color:rgba(219,216,211,0.7);line-height:1.5'>{item}</div>" for item in synthesis["compound_flags"])
+        html += card("⚡ Cross-document risks", rows, bg="rgba(245,158,11,0.05)", border="rgba(245,158,11,0.15)")
 
     adversarial = result.get("adversarial_audit", {})
     if adversarial.get("rejection_case") or adversarial.get("rebuttal_case"):
         rows = ""
         if adversarial.get("rejection_case"):
-            rows += f"<div style='font-size:12px;padding:4px 0;color:rgba(255,255,255,0.75)'><b>Officer rejection case:</b> {adversarial['rejection_case']}</div>"
+            rows += f"<div style='font-size:13px;padding:6px 0;color:rgba(219,216,211,0.7);line-height:1.5'><b style='color:rgb(219,216,211);font-weight:600'>Officer rejection case:</b> {adversarial['rejection_case']}</div>"
         if adversarial.get("rebuttal_case"):
-            rows += f"<div style='font-size:12px;padding:4px 0;color:rgba(255,255,255,0.75)'><b>Applicant rebuttal path:</b> {adversarial['rebuttal_case']}</div>"
-        html += card("Adversarial audit", rows)
+            rows += f"<div style='font-size:13px;padding:6px 0;color:rgba(219,216,211,0.7);line-height:1.5'><b style='color:rgb(219,216,211);font-weight:600'>Applicant rebuttal path:</b> {adversarial['rebuttal_case']}</div>"
+        html += card("⚖️ Adversarial audit", rows)
 
     if result.get("next_steps"):
         rows = "".join(
-            f"<div style='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);align-items:flex-start'>{badge(step.get('priority','info').upper(), step.get('priority','info'))}<span style='color:rgba(255,255,255,0.75)'>{step.get('action','')}</span></div>"
+            f"<div style='display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);align-items:flex-start'>{badge(step.get('priority','info').upper(), step.get('priority','info'))}<span style='color:rgba(219,216,211,0.7);font-size:13px;line-height:1.5'>{step.get('action','')}</span></div>"
             for step in result["next_steps"]
         )
-        html += card("Next steps", rows)
+        html += card("🚀 Next steps", rows)
 
     cert = result.get("deletion_cert") or raw_result.get("full_result", {}).get("deletion_cert")
     if cert:
-        html += f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px;margin-bottom:4px'><div style='font-size:11px;color:rgba(255,255,255,0.4)'>Deletion certificate</div><pre style='white-space:pre-wrap;font-size:10px;color:rgba(255,255,255,0.55);margin-top:6px'>{cert}</pre></div>"
+        html += f"<div class='uplan-dash-card' style='background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:14px;padding:16px;margin-bottom:6px'><div style='font-size:10px;color:rgba(219,216,211,0.35);text-transform:uppercase;letter-spacing:0.08em;font-weight:600'>🔐 Deletion certificate</div><pre style='white-space:pre-wrap;font-size:11px;color:rgba(219,216,211,0.45);margin-top:8px;font-family:monospace;line-height:1.5'>{cert}</pre></div>"
 
     html += "</div>"
     return html
 
 
-def card(title: str, body: str, bg: str = "rgba(255,255,255,0.04)", border: str = "rgba(255,255,255,0.08)") -> str:
-    return f"<div style='background:{bg};border:1px solid {border};border-radius:10px;padding:16px;margin-bottom:12px;backdrop-filter:blur(8px)'><b style='color:#e2e8f0'>{title}</b><div style='margin-top:9px'>{body}</div></div>"
+def card(title: str, body: str, bg: str = "rgba(255,255,255,0.03)", border: str = "rgba(255,255,255,0.07)") -> str:
+    return (
+        f"<div class='uplan-dash-card' style='background:{bg};border:1px solid {border};"
+        f"border-radius:14px;padding:20px;margin-bottom:14px;"
+        f"backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);"
+        f"font-family:\"Google Sans Flex\",\"Inter\",sans-serif'>"
+        f"<b style='color:rgb(219,216,211);font-size:15px;font-weight:600'>{title}</b>"
+        f"<div style='margin-top:12px'>{body}</div></div>"
+    )
 
 
 def chat_response(message: str, history: list, result_state: dict) -> tuple[list, str]:
@@ -433,22 +631,31 @@ def handle_upload(files, demo_mode: bool):
 HEADER_HTML = """
 <div id='uplan-header'>
   <h1>⚡ Uplan</h1>
-  <p>Immigration document intelligence — reads financial packets, audits evidence quality, flags inconsistencies, and builds a readiness roadmap.</p>
+  <p>Immigration document intelligence — reads financial packets, audits evidence quality, flags inconsistencies, and builds a readiness roadmap.<br>
+  <span style='font-size:11px;color:rgba(219,216,211,0.3);font-weight:400;letter-spacing:0.04em'>POWERED BY AMD MI300X · QWEN 3.6-27B VLM</span></p>
 </div>
 """
 
 
 CHECKLIST_HTML = """
-<div class='tool-card' style='font-size:13px;line-height:1.9'>
-  <b>📋 Packet checklist</b><br>
-  <span style='color:#f87171'>Required:</span> affidavit, bank statement, tax return<br>
-  <span style='color:#fbbf24'>Recommended:</span> bank balance certificate<br>
-  <span style='color:#60a5fa'>Optional:</span> passport / identity document
+<div class='tool-card' style='font-size:13px;line-height:2.0'>
+  <div style='display:flex;align-items:center;gap:8px;margin-bottom:6px'>
+    <span style='font-size:16px'>📋</span>
+    <b style='font-weight:600;font-size:14px'>Packet checklist</b>
+  </div>
+  <div style='display:flex;align-items:center;gap:6px'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:#f87171'></span> <span style='color:#f87171;font-weight:500'>Required:</span> affidavit, bank statement, tax return</div>
+  <div style='display:flex;align-items:center;gap:6px'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:#fbbf24'></span> <span style='color:#fbbf24;font-weight:500'>Recommended:</span> bank balance certificate</div>
+  <div style='display:flex;align-items:center;gap:6px'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:#60a5fa'></span> <span style='color:#60a5fa;font-weight:500'>Optional:</span> passport / identity document</div>
   <hr>
-  <b>🤖 Agent tools</b><br>
-  <span style='color:rgba(255,255,255,0.6)'>Auditor:</span> document readiness and quality checks<br>
-  <span style='color:rgba(255,255,255,0.6)'>Strategist:</span> roadmap and missing-evidence checklist<br>
-  <span style='color:rgba(255,255,255,0.6)'>Synthesis:</span> cross-document risk narrative
+  <div style='display:flex;align-items:center;gap:8px;margin-bottom:6px'>
+    <span style='font-size:16px'>🤖</span>
+    <b style='font-weight:600;font-size:14px'>Agent tools</b>
+  </div>
+  <div style='color:rgba(219,216,211,0.65);line-height:1.8'>
+    <span style='color:rgba(219,216,211,0.85);font-weight:500'>Auditor</span> · document readiness and quality checks<br>
+    <span style='color:rgba(219,216,211,0.85);font-weight:500'>Strategist</span> · roadmap and missing-evidence checklist<br>
+    <span style='color:rgba(219,216,211,0.85);font-weight:500'>Synthesis</span> · cross-document risk narrative
+  </div>
 </div>
 """
 
@@ -461,30 +668,30 @@ def build_ui():
         gr.HTML(HEADER_HTML)
 
         with gr.Row(equal_height=False):
-            with gr.Column(scale=1, min_width=270):
-                gr.Markdown("### Agent tools")
+            with gr.Column(scale=1, min_width=280):
+                gr.Markdown("### ⚙️ Agent tools")
                 demo_toggle = gr.Checkbox(label="Demo mode", value=True, info="Uses a clearly marked sample analysis. Turn off for live AMD backend.")
                 upload_box = gr.File(label="Upload PDF packet", file_types=[".pdf"], file_count="multiple", visible=False)
                 demo_toggle.change(lambda enabled: gr.update(visible=not enabled), demo_toggle, upload_box)
-                analyse_btn = gr.Button("Analyse packet", variant="primary")
+                analyse_btn = gr.Button("⚡ Analyse packet", variant="primary")
                 gr.HTML(CHECKLIST_HTML)
-                gr.Markdown("Raw documents are processed outside the UI in live mode. The extraction layer emits a deletion certificate after purge.")
+                gr.Markdown("<span style='font-size:12px;color:rgba(219,216,211,0.35)'>Raw documents are processed outside the UI in live mode. The extraction layer emits a deletion certificate after purge.</span>")
 
             with gr.Column(scale=2, min_width=360):
-                gr.Markdown("### Consultant")
+                gr.Markdown("### 💬 Consultant")
                 chatbot = gr.Chatbot(
                     label="Consultant",
-                    height=560,
+                    height=580,
                     show_label=False,
-                    value=[{"role": "assistant", "content": "Welcome to Uplan. Load the sample demo or upload a packet when the AMD backend is online. The dashboard will show whether the result is live or backend-offline."}],
+                    value=[{"role": "assistant", "content": "Welcome to **Uplan**. Load the sample demo or upload a packet when the AMD backend is online. The dashboard will reflect whether the result is live or backend-offline.\n\n*Ask me about risks, missing evidence, or strategy.*"}],
                 )
                 with gr.Row():
                     chat_input = gr.Textbox(placeholder="Ask about risks, missing evidence, or next steps...", show_label=False, container=False, scale=5)
                     send_btn = gr.Button("Send", variant="secondary", scale=1)
 
-            with gr.Column(scale=2, min_width=380):
-                gr.Markdown("### Readiness dashboard")
-                dashboard = gr.HTML("<p style='color:rgba(255,255,255,0.4);padding:16px;text-align:center'>Load demo or upload documents to begin.</p>")
+            with gr.Column(scale=2, min_width=400):
+                gr.Markdown("### 📊 Readiness dashboard")
+                dashboard = gr.HTML("<div style='text-align:center;padding:48px 16px;color:rgba(219,216,211,0.35);font-family:\"Google Sans Flex\",\"Inter\",sans-serif'><div style='font-size:40px;margin-bottom:12px;opacity:0.4'>📄</div><p style='font-size:15px;font-weight:450'>Load demo or upload documents to begin.</p></div>")
 
         analyse_btn.click(handle_upload, [upload_box, demo_toggle], [dashboard, chatbot, result_state])
         send_btn.click(chat_response, [chat_input, chatbot, result_state], [chatbot, chat_input])
@@ -498,6 +705,12 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
-        theme=gr.themes.Soft(primary_hue="blue", font=["Georgia", "Times New Roman", "serif"]),
+        theme=gr.themes.Soft(
+            primary_hue="blue",
+            secondary_hue="violet",
+            neutral_hue="slate",
+            font=["Google Sans Flex", "Google Sans", "Inter", "sans-serif"],
+            font_mono=["JetBrains Mono", "Fira Code", "monospace"],
+        ),
         css=CSS,
     )
