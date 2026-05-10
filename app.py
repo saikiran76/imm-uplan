@@ -12,72 +12,101 @@ import gradio as gr
 USE_LIVE_BACKEND = os.getenv("USE_LIVE_BACKEND", "false").lower() == "true"
 AMD_ENDPOINT = os.getenv("AMD_ENDPOINT", "http://localhost:8000/extract")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+UPLAN_API_KEY = os.getenv("UPLAN_API_KEY", "")
 SAMPLE_PATH = Path(__file__).parent / "sample_outputs" / "demo_result.json"
 DEMO_RESULT = json.loads(SAMPLE_PATH.read_text(encoding="utf-8")) if SAMPLE_PATH.exists() else {}
 
 
 CSS = """
-.gradio-container { max-width: 1440px !important; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.gradio-container {
+  max-width: 1440px !important;
+  font-family: 'Inter', sans-serif !important;
+}
 #uplan-header {
-  border-bottom: 1px solid #e4e4df;
-  padding: 10px 0 16px;
-  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 16px 0 20px;
+  margin-bottom: 16px;
 }
 #uplan-header h1 {
   margin: 0;
-  font-size: 24px;
-  letter-spacing: 0;
+  font-size: 28px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
 }
 #uplan-header p {
-  margin: 5px 0 0;
-  color: #666;
+  margin: 6px 0 0;
+  color: rgba(255,255,255,0.55);
   font-size: 13px;
 }
 .tool-card {
-  border: 1px solid #e1e1dc;
-  border-radius: 8px;
-  padding: 12px;
-  background: #ffffff;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 14px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+  color: rgba(255,255,255,0.85);
+}
+.tool-card b {
+  color: rgba(255,255,255,0.95);
+}
+.tool-card hr {
+  border: 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin: 10px 0;
+}
+/* Chat input fix */
+.gradio-container textarea {
+  min-height: 44px !important;
+}
+/* Better spacing for chat row */
+.gradio-container .gap {
+  gap: 8px;
 }
 """
 
 
 SEV_COLOR = {
-    "critical": ("#FCEBEB", "#A32D2D"),
-    "warning": ("#FAEEDA", "#854F0B"),
-    "info": ("#E6F1FB", "#0C447C"),
-    "pass": ("#E1F5EE", "#085041"),
+    "critical": ("rgba(239,68,68,0.15)", "#f87171"),
+    "warning": ("rgba(245,158,11,0.15)", "#fbbf24"),
+    "info": ("rgba(96,165,250,0.15)", "#60a5fa"),
+    "pass": ("rgba(52,211,153,0.15)", "#34d399"),
 }
 
 
 def badge(text: str, severity: str) -> str:
-    bg, color = SEV_COLOR.get(severity, ("#F1EFE8", "#444441"))
+    bg, color = SEV_COLOR.get(severity, ("rgba(255,255,255,0.06)", "rgba(255,255,255,0.6)"))
     return (
-        f"<span style='display:inline-block;padding:2px 9px;border-radius:999px;"
+        f"<span style='display:inline-block;padding:3px 10px;border-radius:999px;"
         f"font-size:11px;font-weight:600;background:{bg};color:{color};"
+        f"border:1px solid {color}22;"
         f"margin:2px 3px 2px 0'>{text}</span>"
     )
 
 
 def money(value: Any, currency: str = "") -> str:
     if value is None:
-        return "<span style='color:#999'>not found</span>"
+        return "<span style='color:rgba(255,255,255,0.3)'>not found</span>"
     try:
-        return f"<b>{currency} {float(value):,.0f}</b>"
+        return f"<b style='color:#e2e8f0'>{currency} {float(value):,.0f}</b>"
     except (TypeError, ValueError):
-        return f"<b>{value}</b>"
+        return f"<b style='color:#e2e8f0'>{value}</b>"
 
 
 def score_bar(score: float) -> str:
     pct = max(0, min(100, int(score * 100)))
-    color = "#A32D2D" if pct < 50 else "#BA7517" if pct < 75 else "#1D9E75"
+    color = "#f87171" if pct < 50 else "#fbbf24" if pct < 75 else "#34d399"
     return f"""
-<div style='margin-top:8px'>
-  <div style='display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px'>
-    <span>Narrative coherence</span><b>{pct}%</b>
+<div style='margin-top:10px'>
+  <div style='display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;color:rgba(255,255,255,0.7)'>
+    <span>Narrative coherence</span><b style='color:{color}'>{pct}%</b>
   </div>
-  <div style='height:7px;background:#e8e8e3;border-radius:999px'>
-    <div style='height:7px;width:{pct}%;background:{color};border-radius:999px'></div>
+  <div style='height:8px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden'>
+    <div style='height:8px;width:{pct}%;background:linear-gradient(90deg,{color}cc,{color});border-radius:999px;transition:width 0.5s ease'></div>
   </div>
 </div>
 """
@@ -174,13 +203,16 @@ def run_backend(files: list[Any] | None) -> dict[str, Any]:
 
     upload_files = []
     handles = []
+    headers = {}
+    if UPLAN_API_KEY:
+        headers["X-API-Key"] = UPLAN_API_KEY
     try:
         for file_obj in files:
             path = getattr(file_obj, "name", file_obj)
             handle = open(path, "rb")
             handles.append(handle)
             upload_files.append(("files", (Path(path).name, handle, "application/pdf")))
-        response = requests.post(AMD_ENDPOINT, files=upload_files, timeout=180)
+        response = requests.post(AMD_ENDPOINT, files=upload_files, headers=headers, timeout=300)
         response.raise_for_status()
         return response.json()
     finally:
@@ -191,7 +223,7 @@ def run_backend(files: list[Any] | None) -> dict[str, Any]:
 def build_dashboard_html(raw_result: dict[str, Any]) -> str:
     result = normalize_result(raw_result)
     if not result:
-        return "<p style='color:#777;padding:16px'>Upload documents or run demo mode to begin.</p>"
+        return "<p style='color:rgba(255,255,255,0.4);padding:16px'>Upload documents or run demo mode to begin.</p>"
 
     fields = result.get("reliable_fields", {})
     synthesis = result.get("narrative_synthesis", {})
@@ -205,83 +237,87 @@ def build_dashboard_html(raw_result: dict[str, Any]) -> str:
     account_total = sum(float(item.get("amount") or 0) for item in fields.get("financial_accounts", []))
     income_total = sum(float(item.get("annual_amount") or 0) for item in fields.get("income_sources", []))
 
+    label_style = "color:rgba(255,255,255,0.45);font-size:11px;text-transform:uppercase;letter-spacing:0.5px"
+    card_bg = "rgba(255,255,255,0.04)"
+    card_border = "rgba(255,255,255,0.08)"
+
     html = f"""
-<div style='font-family:Inter,Arial,sans-serif;font-size:13px;line-height:1.55'>
-  <div style='background:#f8f8f6;border:1px solid #e1e1dc;border-radius:8px;padding:14px;margin-bottom:12px'>
+<div style='font-family:Inter,Arial,sans-serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.85)'>
+  <div style='background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(167,139,250,0.08));border:1px solid {card_border};border-radius:10px;padding:16px;margin-bottom:12px'>
     <div style='display:flex;justify-content:space-between;align-items:center'>
-      <b>Readiness overview</b>{badge(overall, overall_sev)}
+      <b style='color:#e2e8f0'>Readiness overview</b>{badge(overall, overall_sev)}
     </div>
     {score_bar(score)}
-    {"<div style='font-size:12px;color:#A32D2D;margin-top:7px'>Human review required</div>" if synthesis.get("human_review_required") else ""}
+    {"<div style='font-size:12px;color:#f87171;margin-top:8px'>⚠ Human review required</div>" if synthesis.get("human_review_required") else ""}
   </div>
 
-  <div style='background:#fff;border:1px solid #e1e1dc;border-radius:8px;padding:14px;margin-bottom:12px'>
-    <b>Parties</b>
-    <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px'>
-      <div><span style='color:#777;font-size:11px'>Applicant</span><br><b>{result.get("applicant_name") or fields.get("beneficiary_name") or "not found"}</b></div>
-      <div><span style='color:#777;font-size:11px'>Sponsor</span><br><b>{result.get("sponsor_name") or "not found"}</b></div>
+  <div style='background:{card_bg};border:1px solid {card_border};border-radius:10px;padding:16px;margin-bottom:12px'>
+    <b style='color:#e2e8f0'>Parties</b>
+    <div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px'>
+      <div><span style='{label_style}'>Applicant</span><br><b style='color:#e2e8f0'>{result.get("applicant_name") or fields.get("beneficiary_name") or "not found"}</b></div>
+      <div><span style='{label_style}'>Sponsor</span><br><b style='color:#e2e8f0'>{result.get("sponsor_name") or "not found"}</b></div>
     </div>
-    <div style='margin-top:7px;color:#555'>Relationship: <b>{result.get("sponsor_relationship") or fields.get("spon_relationship") or "not found"}</b></div>
+    <div style='margin-top:8px;color:rgba(255,255,255,0.6)'>Relationship: <b style='color:#e2e8f0'>{result.get("sponsor_relationship") or fields.get("spon_relationship") or "not found"}</b></div>
   </div>
 
-  <div style='background:#fff;border:1px solid #e1e1dc;border-radius:8px;padding:14px;margin-bottom:12px'>
-    <b>Financial summary</b>
-    <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px'>
-      <div><span style='color:#777;font-size:11px'>Required funds</span><br>{money(t_req, currency)}</div>
-      <div><span style='color:#777;font-size:11px'>Liquid / deposit evidence</span><br>{money(account_total or fields.get("balance_closing"), currency)}</div>
-      <div><span style='color:#777;font-size:11px'>Affidavit income</span><br>{money(fields.get("i_aff") or income_total, currency)}</div>
-      <div><span style='color:#777;font-size:11px'>Tax verified income</span><br>{money(fields.get("i_tax"), currency)}</div>
+  <div style='background:{card_bg};border:1px solid {card_border};border-radius:10px;padding:16px;margin-bottom:12px'>
+    <b style='color:#e2e8f0'>Financial summary</b>
+    <div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px'>
+      <div><span style='{label_style}'>Required funds</span><br>{money(t_req, currency)}</div>
+      <div><span style='{label_style}'>Liquid / deposit evidence</span><br>{money(account_total or fields.get("balance_closing"), currency)}</div>
+      <div><span style='{label_style}'>Affidavit income</span><br>{money(fields.get("i_aff") or income_total, currency)}</div>
+      <div><span style='{label_style}'>Tax verified income</span><br>{money(fields.get("i_tax"), currency)}</div>
     </div>
   </div>
 """
 
     if docs:
         rows = "".join(
-            f"<div style='display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f1f1ed'>"
-            f"<span>{doc.get('type','unknown').replace('_',' ').title()}</span>"
-            f"<span style='color:#777'>{doc.get('pages',0)}p · {doc.get('quality','unknown')} · {badge(doc.get('status','seen'), 'pass')}</span></div>"
+            f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06)'>"
+            f"<span style='color:rgba(255,255,255,0.8)'>{doc.get('type','unknown').replace('_',' ').title()}</span>"
+            f"<span style='color:rgba(255,255,255,0.45)'>{doc.get('pages',0)}p · {doc.get('quality','unknown')} · {badge(doc.get('status','seen'), 'pass')}</span></div>"
             for doc in docs
         )
         html += card("Documents", rows)
 
     if fields.get("name_variants"):
         rows = "".join(
-            f"<div style='font-size:12px'><span style='color:#777'>{key.replace('_',' ').title()}</span>: {value}</div>"
+            f"<div style='font-size:12px;color:rgba(255,255,255,0.7)'><span style='color:rgba(255,255,255,0.4)'>{key.replace('_',' ').title()}</span>: <span style='color:#e2e8f0'>{value}</span></div>"
             for key, value in fields["name_variants"].items()
         )
         html += card("Name consistency", rows)
 
     if findings:
         rows = "".join(
-            f"<div style='padding:8px 0;border-bottom:1px solid #f1f1ed'>"
-            f"<div><b>{finding.get('rule_id','rule').replace('_',' ').title()}</b> {badge(finding.get('severity','info').title(), finding.get('severity','info'))}</div>"
-            f"<div style='font-size:12px;color:#555'>{finding.get('message','')}</div>"
+            f"<div style='padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)'>"
+            f"<div><b style='color:#e2e8f0'>{finding.get('rule_id','rule').replace('_',' ').title()}</b> {badge(finding.get('severity','info').title(), finding.get('severity','info'))}</div>"
+            f"<div style='font-size:12px;color:rgba(255,255,255,0.55);margin-top:3px'>{finding.get('message','')}</div>"
             f"</div>"
             for finding in findings
         )
         html += card("Agent findings", rows)
 
     if synthesis.get("compound_flags"):
-        rows = "".join(f"<div style='font-size:12px;padding:4px 0'>{item}</div>" for item in synthesis["compound_flags"])
-        html += card("Cross-document risks", rows, bg="#FAEEDA", border="#E7C27A")
+        rows = "".join(f"<div style='font-size:12px;padding:4px 0;color:rgba(255,255,255,0.75)'>{item}</div>" for item in synthesis["compound_flags"])
+        html += card("Cross-document risks", rows, bg="rgba(245,158,11,0.08)", border="rgba(245,158,11,0.2)")
 
     if result.get("next_steps"):
         rows = "".join(
-            f"<div style='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f1f1ed'>{badge(step.get('priority','info').upper(), step.get('priority','info'))}<span>{step.get('action','')}</span></div>"
+            f"<div style='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);align-items:flex-start'>{badge(step.get('priority','info').upper(), step.get('priority','info'))}<span style='color:rgba(255,255,255,0.75)'>{step.get('action','')}</span></div>"
             for step in result["next_steps"]
         )
         html += card("Next steps", rows)
 
     cert = result.get("deletion_cert") or raw_result.get("full_result", {}).get("deletion_cert")
     if cert:
-        html += f"<div style='background:#f4f4f1;border-radius:8px;padding:10px;margin-bottom:4px'><div style='font-size:11px;color:#777'>Deletion certificate</div><pre style='white-space:pre-wrap;font-size:10px;color:#444'>{cert}</pre></div>"
+        html += f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px;margin-bottom:4px'><div style='font-size:11px;color:rgba(255,255,255,0.4)'>Deletion certificate</div><pre style='white-space:pre-wrap;font-size:10px;color:rgba(255,255,255,0.55);margin-top:6px'>{cert}</pre></div>"
 
     html += "</div>"
     return html
 
 
-def card(title: str, body: str, bg: str = "#fff", border: str = "#e1e1dc") -> str:
-    return f"<div style='background:{bg};border:1px solid {border};border-radius:8px;padding:14px;margin-bottom:12px'><b>{title}</b><div style='margin-top:8px'>{body}</div></div>"
+def card(title: str, body: str, bg: str = "rgba(255,255,255,0.04)", border: str = "rgba(255,255,255,0.08)") -> str:
+    return f"<div style='background:{bg};border:1px solid {border};border-radius:10px;padding:16px;margin-bottom:12px;backdrop-filter:blur(8px)'><b style='color:#e2e8f0'>{title}</b><div style='margin-top:9px'>{body}</div></div>"
 
 
 SYSTEM_PROMPT = """You are Uplan's immigration document consultant AI.
@@ -312,24 +348,22 @@ def chat_response(message: str, history: list, result_state: dict) -> tuple[list
             import anthropic
 
             client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-            messages = []
-            for user_msg, assistant_msg in history:
-                if user_msg:
-                    messages.append({"role": "user", "content": user_msg})
-                if assistant_msg:
-                    messages.append({"role": "assistant", "content": assistant_msg})
-            messages.append({"role": "user", "content": message})
+            api_messages = []
+            for msg in history:
+                if msg.get("role") and msg.get("content"):
+                    api_messages.append({"role": msg["role"], "content": msg["content"]})
+            api_messages.append({"role": "user", "content": message})
             response = client.messages.create(
                 model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
                 max_tokens=500,
                 system=SYSTEM_PROMPT.format(analysis=json.dumps(result, indent=2)[:7000]),
-                messages=messages,
+                messages=api_messages,
             )
             reply = response.content[0].text
         except Exception as exc:
             reply = f"Consultant chat is temporarily unavailable: {exc}"
 
-    return history + [[message, reply]], ""
+    return history + [{"role": "user", "content": message}, {"role": "assistant", "content": reply}], ""
 
 
 def handle_upload(files, demo_mode: bool):
@@ -343,29 +377,29 @@ def handle_upload(files, demo_mode: bool):
         f"{warning} advisory item(s). The dashboard has been updated. "
         "Ask me about any finding or missing document."
     )
-    history = [["Analysis complete. What are my main issues?", intro]]
+    history = [{"role": "user", "content": "Analysis complete. What are my main issues?"}, {"role": "assistant", "content": intro}]
     return build_dashboard_html(normalized), history, normalized
 
 
 HEADER_HTML = """
 <div id='uplan-header'>
-  <h1>Uplan</h1>
-  <p>Immigration document intelligence: reads financial packets, audits evidence quality, flags inconsistencies, and builds a readiness roadmap.</p>
+  <h1>⚡ Uplan</h1>
+  <p>Immigration document intelligence — reads financial packets, audits evidence quality, flags inconsistencies, and builds a readiness roadmap.</p>
 </div>
 """
 
 
 CHECKLIST_HTML = """
-<div class='tool-card' style='font-size:13px;line-height:1.8'>
-  <b>Packet checklist</b><br>
-  <span style='color:#A32D2D'>Required:</span> affidavit, bank statement, tax return<br>
-  <span style='color:#854F0B'>Recommended:</span> bank balance certificate<br>
-  <span style='color:#0C447C'>Optional:</span> passport / identity document<br>
-  <hr style='border:0;border-top:1px solid #eee'>
-  <b>Agent tools</b><br>
-  Auditor: document readiness and quality checks<br>
-  Strategist: roadmap and missing-evidence checklist<br>
-  Synthesis: cross-document risk narrative
+<div class='tool-card' style='font-size:13px;line-height:1.9'>
+  <b>📋 Packet checklist</b><br>
+  <span style='color:#f87171'>Required:</span> affidavit, bank statement, tax return<br>
+  <span style='color:#fbbf24'>Recommended:</span> bank balance certificate<br>
+  <span style='color:#60a5fa'>Optional:</span> passport / identity document
+  <hr>
+  <b>🤖 Agent tools</b><br>
+  <span style='color:rgba(255,255,255,0.6)'>Auditor:</span> document readiness and quality checks<br>
+  <span style='color:rgba(255,255,255,0.6)'>Strategist:</span> roadmap and missing-evidence checklist<br>
+  <span style='color:rgba(255,255,255,0.6)'>Synthesis:</span> cross-document risk narrative
 </div>
 """
 
@@ -373,8 +407,6 @@ CHECKLIST_HTML = """
 def build_ui():
     with gr.Blocks(
         title="Uplan - Immigration Document Intelligence",
-        theme=gr.themes.Soft(primary_hue="blue", font=[gr.themes.GoogleFont("Inter"), "Arial", "sans-serif"]),
-        css=CSS,
     ) as app:
         result_state = gr.State({})
         gr.HTML(HEADER_HTML)
@@ -395,8 +427,7 @@ def build_ui():
                     label="Consultant",
                     height=560,
                     show_label=False,
-                    bubble_full_width=False,
-                    value=[[None, "Welcome to Uplan. Load the demo or upload a packet, and I will walk through the agent findings."]],
+                    value=[{"role": "assistant", "content": "Welcome to Uplan. Load the demo or upload a packet, and I will walk through the agent findings."}],
                 )
                 with gr.Row():
                     chat_input = gr.Textbox(placeholder="Ask about risks, missing evidence, or next steps...", show_label=False, container=False, scale=5)
@@ -404,7 +435,7 @@ def build_ui():
 
             with gr.Column(scale=2, min_width=380):
                 gr.Markdown("### Readiness dashboard")
-                dashboard = gr.HTML("<p style='color:#777;padding:16px'>Load demo or upload documents to begin.</p>")
+                dashboard = gr.HTML("<p style='color:rgba(255,255,255,0.4);padding:16px;text-align:center'>Load demo or upload documents to begin.</p>")
 
         analyse_btn.click(handle_upload, [upload_box, demo_toggle], [dashboard, chatbot, result_state])
         send_btn.click(chat_response, [chat_input, chatbot, result_state], [chatbot, chat_input])
@@ -414,4 +445,10 @@ def build_ui():
 
 
 if __name__ == "__main__":
-    build_ui().launch(server_name="0.0.0.0", server_port=7860, show_error=True)
+    build_ui().launch(
+        server_name="0.0.0.0",
+        server_port=7860,
+        show_error=True,
+        theme=gr.themes.Soft(primary_hue="blue", font=[gr.themes.GoogleFont("Inter"), "Arial", "sans-serif"]),
+        css=CSS,
+    )

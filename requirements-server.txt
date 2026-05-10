@@ -1,0 +1,19 @@
+# Server dependencies — install on the AMD MI300X machine
+# pip install -r requirements-server.txt
+
+flask>=3.0
+flask-cors>=5.0
+gunicorn>=22.0
+
+# PDF processing
+Pillow
+PyMuPDF
+
+# ML / VLM inference
+torch
+torchvision
+transformers>=4.51.0
+accelerate
+
+# Agent pipeline
+langgraph
