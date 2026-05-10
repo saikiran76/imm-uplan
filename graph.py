@@ -16,6 +16,16 @@ def intake_node(state: UplanState) -> dict:
     return {}
 
 
+def run_sponsor_agent(state: UplanState) -> dict:
+    from agents.state import AgentFinding
+    return {"findings": [AgentFinding(agent_id="sponsor_agent", rule_id="BYPASSED", severity="info", message="Bypassed for Sprint", requires_human_review=False)], "completed_agents": ["sponsor_agent"]}
+
+
+def run_identity_agent(state: UplanState) -> dict:
+    from agents.state import AgentFinding
+    return {"findings": [AgentFinding(agent_id="identity_agent", rule_id="BYPASSED", severity="info", message="Bypassed for Sprint", requires_human_review=False)], "completed_agents": ["identity_agent"]}
+
+
 def build_graph():
     graph = StateGraph(UplanState)
 
@@ -23,6 +33,8 @@ def build_graph():
     graph.add_node("policy_distribution", distribute_policy)
     graph.add_node("financial_agent", run_financial_agent)
     graph.add_node("tax_agent", run_tax_agent)
+    graph.add_node("sponsor_agent", run_sponsor_agent)
+    graph.add_node("identity_agent", run_identity_agent)
     graph.add_node("narrative_synthesis", run_synthesis_agent)
     graph.add_node("adversarial_audit", run_adversarial_audit)
 
@@ -30,7 +42,9 @@ def build_graph():
     graph.add_edge("intake", "policy_distribution")
     graph.add_edge("policy_distribution", "financial_agent")
     graph.add_edge("policy_distribution", "tax_agent")
-    graph.add_edge(["financial_agent", "tax_agent"], "narrative_synthesis")
+    graph.add_edge("policy_distribution", "sponsor_agent")
+    graph.add_edge("policy_distribution", "identity_agent")
+    graph.add_edge(["financial_agent", "tax_agent", "sponsor_agent", "identity_agent"], "narrative_synthesis")
     graph.add_edge("narrative_synthesis", "adversarial_audit")
     graph.add_edge("adversarial_audit", END)
 

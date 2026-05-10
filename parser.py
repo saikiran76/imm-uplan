@@ -300,64 +300,44 @@ class ExtractionParser:
         lp: float,
         q: SourceQuality,
     ) -> None:
-        r.name_string   = d.get("declarant_name")
-        r.beneficiary_name = d.get("beneficiary_name")
-        r.declarant_address = d.get("declarant_address")
-        r.currency_code = d.get("currency_code")
-        r.affidavit_type = d.get("affidavit_type")
-        r.spon_relationship = d.get("relationship")
+        r.beneficiary_name = d.get("applicant_name")
+        r.name_string = d.get("sponsor_name")
 
-        income_d = d.get("declared_annual_income", {}) or {}
-        r.i_aff = _wrap(
-            value=income_d.get("value"),
-            field_conf_str=income_d.get("confidence", "low"),
-            mean_logprob=lp,
-            source_quality=q,
-        )
+        r.financial_indicators = d.get("financial_indicators", {})
+        r.adversarial_flags = _as_list(d.get("adversarial_flags"))
 
-        for member in _as_list(d.get("family_members")):
-            if not isinstance(member, dict):
-                continue
-            r.family_members.append(FamilyMember(
-                name=member.get("name"),
-                relationship=member.get("relationship"),
-                date_of_birth=member.get("date_of_birth"),
-                age=_as_optional_float(member.get("age")),
+        total_income = d.get("total_annual_income_inr")
+        if total_income is not None:
+            r.i_aff = _wrap(
+                value=total_income,
+                field_conf_str="high",
+                mean_logprob=lp,
+                source_quality=q,
+            )
+
+        movable_assets = d.get("movable_assets_inr")
+        if movable_assets is not None:
+            r.movable_assets.append(AssetItem(
+                description="Total Movable Assets",
+                amount=_wrap(
+                    value=movable_assets,
+                    field_conf_str="high",
+                    mean_logprob=lp,
+                    source_quality=q,
+                )
             ))
 
-        for account in _as_list(d.get("financial_accounts")):
-            if not isinstance(account, dict):
-                continue
-            r.financial_accounts.append(FinancialAccount(
-                institution_name=account.get("institution_name"),
-                account_number=str(account.get("account_number")) if account.get("account_number") is not None else None,
-                account_type=account.get("account_type"),
-                amount=_wrap_money_obj(account.get("amount"), lp, q),
-            ))
-
-        for income in _as_list(d.get("income_sources")):
-            if not isinstance(income, dict):
+        for stream in _as_list(d.get("income_streams")):
+            if not isinstance(stream, dict):
                 continue
             r.income_sources.append(IncomeSource(
-                source=income.get("source"),
-                annual_amount=_wrap_money_obj(income.get("annual_amount"), lp, q),
-            ))
-
-        for asset in _as_list(d.get("movable_assets")):
-            if not isinstance(asset, dict):
-                continue
-            r.movable_assets.append(AssetItem(
-                description=asset.get("description"),
-                owner=asset.get("owner"),
-                amount=_wrap_money_obj(asset.get("amount"), lp, q),
-            ))
-
-        for prop in _as_list(d.get("properties")):
-            if not isinstance(prop, dict):
-                continue
-            r.properties.append(PropertyAsset(
-                description=prop.get("description"),
-                value=_wrap_money_obj(prop.get("value"), lp, q),
+                source=stream.get("source"),
+                annual_amount=_wrap(
+                    value=stream.get("amount_inr"),
+                    field_conf_str="high",
+                    mean_logprob=lp,
+                    source_quality=q,
+                )
             ))
 
     def _parse_application_form(

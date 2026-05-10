@@ -112,6 +112,8 @@ class PageExtractionResult:
     income_sources: list[IncomeSource] = field(default_factory=list)
     movable_assets: list[AssetItem] = field(default_factory=list)
     properties: list[PropertyAsset] = field(default_factory=list)
+    financial_indicators: dict[str, object] = field(default_factory=dict)
+    adversarial_flags: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -147,6 +149,8 @@ class DocumentExtractionResult:
     income_sources: list[IncomeSource] = field(default_factory=list)
     movable_assets: list[AssetItem] = field(default_factory=list)
     properties: list[PropertyAsset] = field(default_factory=list)
+    financial_indicators: dict[str, object] = field(default_factory=dict)
+    adversarial_flags: list[str] = field(default_factory=list)
 
     @property
     def doc_hash(self) -> str:
@@ -223,6 +227,8 @@ class DocumentExtractionResult:
                 }
                 for prop in self.properties
             ],
+            "financial_indicators": self.financial_indicators,
+            "adversarial_flags": self.adversarial_flags,
         }
 
     def any_low_confidence(self) -> bool:

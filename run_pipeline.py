@@ -195,9 +195,9 @@ async def main() -> None:
     parser.add_argument("--applicant-income-percentile", type=float)
     parser.add_argument("--session-id", default="manual-layer1-test")
     parser.add_argument("--backend", choices=["mock", "hf"], default="hf")
-    parser.add_argument("--model-path", default="Qwen/Qwen2.5-VL-3B-Instruct")
+    parser.add_argument("--model-path", default="Qwen/Qwen2.5-VL-72B-Instruct")
     parser.add_argument("--device", default="auto")
-    parser.add_argument("--max-new-tokens", type=int, default=4096)
+    parser.add_argument("--max-new-tokens", type=int, default=8192)
     parser.add_argument(
         "--force-page-type",
         choices=[page.value for page in PageType if page != PageType.UNKNOWN],

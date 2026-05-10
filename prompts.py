@@ -15,7 +15,8 @@ Your sole purpose is to read the document image provided and return a single,
 valid JSON object containing the specific fields requested.
 
 Rules you must follow without exception:
-- Output ONLY the JSON object. No explanation, no preamble, no markdown fences.
+- First, output a <scratchpad> block to map out raw values, normalize them, and perform any required addition.
+- Then, output ONLY the JSON object. No explanation, no preamble, no markdown fences.
 - If a field is not present in the document or is not legible, set it to null.
 - Do not infer, estimate, or hallucinate any value. Read what is printed.
 - All monetary amounts must be returned as numbers, not strings.
@@ -74,21 +75,39 @@ Valid page_type values:
 
 
 BANK_STATEMENT_PROMPT = """\
-Extract the bank statement fields from this page and return ONLY valid JSON:
+### SYSTEM DIRECTIVE: QWEN2-VL 72B FORENSIC EXTRACTION
+You are analyzing high-stakes financial documentation for immigration intelligence. Precision is non-negotiable.
+
+### STEP 1: <scratchpad> REASONING (DO NOT SKIP)
+Before outputting any JSON, you must use a <scratchpad> block to perform a "Forensic Count" for the bank statement:
+1. RAW STRING EXTRACTION: Extract the figures exactly as they appear.
+2. NORMALIZATION: Strip all currency symbols, commas, and trailing paise/decimals.
+3. LINEAR LEDGER:
+   - Identify: Opening Balance, Total Inflows, Total Outflows, and Closing Balance.
+   - Verify: Opening + Inflows - Outflows == Closing. Flag any discrepancy.
+
+### STEP 2: STICKY CONTEXT RETENTION
+For multi-page documents, do not truncate the audit. If the document is dense, prioritize the integrity of the closing JSON block. The reasoning must lead logically to the final integers.
+
+### STEP 3: FLAT JSON SCHEMA
+Output ONLY a flat JSON object after the </scratchpad>.
+
 {
   "account_holder_name": "<string or null>",
   "currency_code": "<ISO 4217 code or null>",
   "statement_period_start": "<YYYY-MM or null>",
   "statement_period_end": "<YYYY-MM or null>",
-  "opening_balance": {"value": <number or null>, "confidence": "<high|medium|low>"},
-  "closing_balance": {"value": <number or null>, "confidence": "<high|medium|low>"},
-  "monthly_closing_balances": [
-    {"month": "<YYYY-MM>", "closing_balance": <number>, "confidence": "<high|medium|low>"}
-  ],
+  "financial_indicators": {
+      "opening_balance": <integer or null>,
+      "total_inflows": <integer or null>,
+      "total_outflows": <integer or null>,
+      "closing_balance": <integer or null>,
+      "math_verified": <true|false|null>
+  },
   "deposits": [
-    {"date": "<YYYY-MM-DD or null>", "amount": <number>, "description": "<string or null>", "confidence": "<high|medium|low>"}
+    {"date": "<YYYY-MM-DD or null>", "amount_inr": <integer>, "description": "<string or null>"}
   ],
-  "source_quality": "<digital|scan|photograph|unknown>"
+  "adversarial_flags": ["<string>"]
 }
 """
 
@@ -136,62 +155,76 @@ Important:
 
 
 TAX_RETURN_PROMPT = """\
-Extract the tax return fields from this page and return ONLY valid JSON:
+### SYSTEM DIRECTIVE: QWEN2-VL 72B FORENSIC EXTRACTION
+You are analyzing high-stakes financial documentation for immigration intelligence. Precision is non-negotiable.
+
+### STEP 1: <scratchpad> REASONING (DO NOT SKIP)
+Before outputting any JSON, you must use a <scratchpad> block to perform a "Forensic Count" for the tax return:
+1. RAW STRING EXTRACTION: Extract the figures exactly as they appear.
+2. NORMALIZATION: Strip all currency symbols, commas, and trailing paise/decimals.
+3. INCOME AGGREGATION:
+   - Explicitly list every income stream (e.g., Salary, Business, Capital Gains) individually.
+   - Explicitly calculate the SUM of these streams to derive the Gross Total Income.
+   - Identify the final Taxable Income.
+
+### STEP 2: STICKY CONTEXT RETENTION
+For multi-page documents, do not truncate the audit. If the document is dense, prioritize the integrity of the closing JSON block. The reasoning must lead logically to the final integers.
+
+### STEP 3: FLAT JSON SCHEMA
+Output ONLY a flat JSON object after the </scratchpad>.
+
 {
   "taxpayer_name": "<string or null>",
-  "tax_year": <integer or null>,
   "currency_code": "<ISO 4217 code or null>",
-  "gross_income": {"value": <number or null>, "confidence": "<high|medium|low>"},
-  "taxable_income": {"value": <number or null>, "confidence": "<high|medium|low>"},
-  "tax_paid": {"value": <number or null>, "confidence": "<high|medium|low>"},
-  "income_sources": ["<string>", "..."],
-  "document_issuer": "<string or null>",
-  "source_quality": "<digital|scan|photograph|unknown>"
+  "tax_year": <integer or null>,
+  "income_streams": [{"source": "<string or null>", "amount_inr": <integer or null>}],
+  "financial_indicators": {
+      "gross_total_income": <integer or null>,
+      "taxable_income": <integer or null>,
+      "math_verified": <true|false|null>
+  },
+  "adversarial_flags": ["<string>"]
 }
 """
 
 
 AFFIDAVIT_PROMPT = """\
-Extract the affidavit fields from this page and return ONLY valid JSON:
-{
-  "declarant_name": "<string or null>",
-  "beneficiary_name": "<string or null>",
-  "relationship": "<string or null>",
-  "declarant_address": "<string or null>",
-  "currency_code": "<ISO 4217 code or null>",
-  "declared_annual_income": {"value": <number or null>, "confidence": "<high|medium|low>"},
-  "declared_net_worth": {"value": <number or null>, "confidence": "<high|medium|low>"},
-  "declared_support_amount": {"value": <number or null>, "confidence": "<high|medium|low>", "period": "<string or null>"},
-  "family_members": [
-    {"name": "<string or null>", "relationship": "<string or null>", "date_of_birth": "<YYYY-MM-DD or null>", "age": <number or null>}
-  ],
-  "financial_accounts": [
-    {
-      "institution_name": "<string or null>",
-      "account_number": "<string or null>",
-      "account_type": "<string or null>",
-      "amount": {"value": <number or null>, "confidence": "<high|medium|low>"}
-    }
-  ],
-  "income_sources": [
-    {"source": "<salary|business|rent|other>", "annual_amount": {"value": <number or null>, "confidence": "<high|medium|low>"}}
-  ],
-  "movable_assets": [
-    {"description": "<string or null>", "owner": "<string or null>", "amount": {"value": <number or null>, "confidence": "<high|medium|low>"}}
-  ],
-  "properties": [
-    {"description": "<string or null>", "value": {"value": <number or null>, "confidence": "<high|medium|low>"}}
-  ],
-  "affidavit_type": "<string or null>",
-  "notarised": <true|false|null>,
-  "source_quality": "<digital|scan|photograph|unknown>"
-}
+### SYSTEM DIRECTIVE: QWEN2-VL 72B FORENSIC EXTRACTION
+You are analyzing high-stakes financial documentation for immigration intelligence. Precision is non-negotiable.
 
-For Indian number formatting, convert values exactly:
-- Rs. 1,54,603.98 means 154603.98.
-- Rs. 10.23,668-40 means 1023668.40 if the visible intent is Indian comma/decimal formatting.
-- Do not turn account numbers into amounts.
-- Do not invent totals that are not printed.
+### STEP 1: <scratchpad> REASONING (DO NOT SKIP)
+Before outputting any JSON, you must use a <scratchpad> block to perform a "Forensic Count" for every financial figure:
+1. RAW STRING EXTRACTION: Extract the figure exactly as it appears (e.g., "Rs. 25,00,00-00").
+2. NORMALIZATION: 
+   - Strip all currency symbols and letters.
+   - Remove trailing paise/decimals (e.g., "-00", "/-").
+   - Count the remaining digits to verify the magnitude (Lakhs vs. Thousands).
+3. AGGREGATION (For multiple streams): 
+   - List every income source (Salary, Business, Rent) individually.
+   - Explicitly calculate the SUM of these sources in the scratchpad.
+4. LINEAR LEDGER (For Bank Statements/High Volume):
+   - Identify: Opening Balance, Total Inflows, Total Outflows, and Closing Balance.
+   - Verify: Opening + Inflows - Outflows == Closing. Flag any discrepancy.
+
+### STEP 2: STICKY CONTEXT RETENTION
+For multi-page documents, do not truncate the audit. If the document is dense, prioritize the integrity of the closing JSON block. The reasoning must lead logically to the final integers.
+
+### STEP 3: FLAT JSON SCHEMA
+Output ONLY a flat JSON object after the </scratchpad>.
+
+{
+  "applicant_name": "<string or null>",
+  "sponsor_name": "<string or null>",
+  "movable_assets_inr": <integer or null>,
+  "total_annual_income_inr": <integer or null>,
+  "income_streams": [{"source": "<string or null>", "amount_inr": <integer or null>}],
+  "financial_indicators": {
+      "opening_balance": <integer or null>,
+      "closing_balance": <integer or null>,
+      "math_verified": <true|false|null>
+  },
+  "adversarial_flags": ["<string>"]
+}
 """
 
 

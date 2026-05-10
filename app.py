@@ -302,6 +302,7 @@ def normalize_result(result: dict[str, Any]) -> dict[str, Any]:
             "adversarial_audit": adversarial,
             "next_steps": next_steps(findings),
             "deletion_cert": full.get("deletion_cert", ""),
+            "vlm_debug": result.get("vlm_debug", []),
         }
 
     if "full_result" in result and "agent_findings" not in result:
@@ -319,6 +320,7 @@ def normalize_result(result: dict[str, Any]) -> dict[str, Any]:
             "narrative_synthesis": synthesize([]),
             "next_steps": next_steps([]),
             "deletion_cert": full.get("deletion_cert", ""),
+            "vlm_debug": result.get("vlm_debug", []),
         }
 
     return result
@@ -505,6 +507,15 @@ def build_dashboard_html(raw_result: dict[str, Any]) -> str:
         if adversarial.get("rebuttal_case"):
             rows += f"<div class='dossier-row' style='flex-direction:column;align-items:flex-start'><span class='data-label text-pass'>Applicant rebuttal path</span><div style='color:var(--text-muted);margin-top:4px;line-height:1.5'>{adversarial['rebuttal_case']}</div></div>"
         left_col_html += f"<div class='dossier-card card-6'><span class='dossier-card-title'>Adversarial audit</span>{rows}</div>"
+
+    vlm_debug = result.get("vlm_debug", [])
+    if vlm_debug:
+        scratchpads = [event.get("scratchpad") for event in vlm_debug if event.get("scratchpad")]
+        if scratchpads:
+            trace_content = "\n\n".join(scratchpads)
+            # Ensure HTML escapes to prevent layout breaking
+            trace_content = trace_content.replace("<", "&lt;").replace(">", "&gt;")
+            left_col_html += f"<details class='dossier-card card-4' style='border-color:rgba(0,240,255,0.3); background:rgba(0,240,255,0.02); margin-top:16px;'><summary class='dossier-card-title' style='color:var(--cyber-cyan); cursor:pointer; outline:none;'>Explainable Trace (Forensic Scratchpad)</summary><div style='margin-top:12px; padding-top:12px; border-top:1px dashed rgba(0,240,255,0.2);'><pre class='mono-text' style='white-space:pre-wrap;font-size:11px;color:var(--text-main);margin:0;line-height:1.4'>{trace_content}</pre></div></details>"
 
     right_col_html = ""
     

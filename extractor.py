@@ -28,6 +28,7 @@ from __future__ import annotations
 import gc
 import hashlib
 import json
+import re
 import secrets
 import time
 from pathlib import Path
@@ -667,11 +668,23 @@ class DocumentExtractor:
             user_prompt=prompt,
             max_new_tokens=self.extraction_max_tokens,
         )
+        
+        # Extract scratchpad content if present
+        scratchpad_content = None
+        scratchpad_match = re.search(r'<scratchpad>(.*?)</scratchpad>', raw, re.DOTALL | re.IGNORECASE)
+        if scratchpad_match:
+            scratchpad_content = scratchpad_match.group(1).strip()
+        
+        # Extract JSON block
+        json_str = raw
+        if scratchpad_match:
+            json_str = raw[scratchpad_match.end():].strip()
+            
         try:
-            data = json.loads(raw)
+            data = json.loads(json_str)
         except json.JSONDecodeError:
             # Try stripping markdown fences if the model misbehaved
-            cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+            cleaned = json_str.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
             try:
                 data = json.loads(cleaned)
             except json.JSONDecodeError:
@@ -683,6 +696,7 @@ class DocumentExtractor:
             "page_type": page_type.value,
             "mean_logprob": mean_logprob,
             "raw_response": raw,
+            "scratchpad": scratchpad_content,
             "parsed_response": data,
         })
 
@@ -767,6 +781,8 @@ class DocumentExtractor:
             merged.income_sources.extend(page.income_sources)
             merged.movable_assets.extend(page.movable_assets)
             merged.properties.extend(page.properties)
+            merged.financial_indicators.update(page.financial_indicators)
+            merged.adversarial_flags.extend(page.adversarial_flags)
 
         return merged
 
