@@ -212,31 +212,60 @@ class ExtractionParser:
         r.financial_indicators = fi
         r.adversarial_flags = _as_list(d.get("adversarial_flags"))
 
-        # Map closing_balance into balance_series so reliable_fields picks it up
-        closing = fi.get("closing_balance")
-        if closing is not None:
+        # Separate FD-like deposits from real transaction deposits.
+        # FD = null date OR description contains "fixed deposit".
+        # FDs contribute to total liquidity. Transaction deposits go to deposit_entries.
+        closing = fi.get("closing_balance") or 0
+        fd_total = 0
+        txn_index = 0
+
+        for dep in d.get("deposits", []):
+            amount = dep.get("amount_inr") or dep.get("amount")
+            if amount is None:
+                continue
+            desc = (dep.get("description") or "").lower()
+            is_fd = dep.get("date") is None or "fixed" in desc or "fd" in desc
+
+            if is_fd:
+                # Fixed deposit → add to financial_accounts for liquidity math
+                fd_total += int(amount)
+                r.financial_accounts.append(FinancialAccount(
+                    institution_name=d.get("account_holder_name"),
+                    account_number=None,
+                    account_type="fixed_deposit",
+                    amount=_wrap(
+                        value=amount,
+                        field_conf_str="high",
+                        mean_logprob=lp,
+                        source_quality=q,
+                        raw_text=str(amount),
+                    ),
+                ))
+            else:
+                # Real dated transaction → deposit_entries for time-series analysis
+                w = _wrap(
+                    value=amount,
+                    field_conf_str="high",
+                    mean_logprob=lp,
+                    source_quality=q,
+                    raw_text=str(amount),
+                )
+                if w:
+                    r.deposit_entries.append((float(txn_index), w))
+                    txn_index += 1
+
+        # Total liquidity = savings closing_balance + all FD balances
+        total_liquidity = closing + fd_total
+        if total_liquidity > 0:
             w = _wrap(
-                value=closing,
+                value=total_liquidity,
                 field_conf_str="high",
                 mean_logprob=lp,
                 source_quality=q,
-                raw_text=str(closing),
+                raw_text=f"savings={closing}+fd={fd_total}",
             )
             if w:
                 r.balance_series.append(w)
-
-        # Deposit entries — new schema uses amount_inr, no confidence field
-        for i, dep in enumerate(d.get("deposits", [])):
-            amount = dep.get("amount_inr") or dep.get("amount")
-            w = _wrap(
-                value=amount,
-                field_conf_str="high",
-                mean_logprob=lp,
-                source_quality=q,
-                raw_text=str(amount or ""),
-            )
-            if w:
-                r.deposit_entries.append((float(i), w))
 
     def _parse_bank_balance_certificate(
         self,

@@ -28,11 +28,14 @@ from __future__ import annotations
 import gc
 import hashlib
 import json
+import logging
 import re
 import secrets
 import time
 from pathlib import Path
 from typing import Any, Optional
+
+logger = logging.getLogger("uplan.extractor")
 
 try:
     from PIL import Image
@@ -478,6 +481,7 @@ class DocumentExtractor:
         self.filename = pdf_path.name
         session_id = session_id or secrets.token_hex(8)
         start_ms = int(time.time() * 1000)
+        logger.info("EXTRACT START: file='%s', session=%s", self.filename, session_id)
 
         try:
             import fitz  # PyMuPDF
@@ -536,6 +540,7 @@ class DocumentExtractor:
                 )
             page_types.append(ptype)
             qualities.append(quality)
+            logger.info("CLASSIFY page=%d -> type=%s quality=%s (file='%s')", original_page_num, ptype.value, quality.value, self.filename)
             if ptype != PageType.UNKNOWN:
                 previous_known_type = ptype
 
@@ -701,6 +706,15 @@ class DocumentExtractor:
             except json.JSONDecodeError:
                 data = {}
 
+        logger.info(
+            "EXTRACT_PAGE page=%d type=%s: parsed_keys=%s, financial_indicators=%s, "
+            "scratchpad=%s, raw_len=%d",
+            page_num, page_type.value, list(data.keys()),
+            data.get("financial_indicators"),
+            "YES" if scratchpad_content else "NO",
+            len(raw),
+        )
+
         self.debug_events.append({
             "stage": "extract",
             "page_number": page_num,
@@ -711,12 +725,27 @@ class DocumentExtractor:
             "parsed_response": data,
         })
 
-        return self.parser.parse_page(
+        page_result = self.parser.parse_page(
             data=data,
             page_number=page_num,
             page_type=page_type,
             mean_logprob=mean_logprob,
         )
+        logger.info(
+            "PARSED page=%d: i_aff=%s, i_tax=%s, balance_series=%d, deposit_entries=%d, "
+            "financial_accounts=%d, income_sources=%d, movable_assets=%d, beneficiary=%s, name=%s",
+            page_num,
+            page_result.i_aff.value if page_result.i_aff else None,
+            page_result.i_tax.value if page_result.i_tax else None,
+            len(page_result.balance_series),
+            len(page_result.deposit_entries),
+            len(page_result.financial_accounts),
+            len(page_result.income_sources),
+            len(page_result.movable_assets),
+            page_result.beneficiary_name,
+            page_result.name_string,
+        )
+        return page_result
 
     def _merge_page_results(
         self,
@@ -795,6 +824,22 @@ class DocumentExtractor:
             merged.financial_indicators.update(page.financial_indicators)
             merged.adversarial_flags.extend(page.adversarial_flags)
 
+        logger.info(
+            "MERGE_PAGES for '%s': i_aff=%s, i_tax=%s, balance_series=%d, "
+            "deposit_entries=%d, financial_accounts=%d, income_sources=%d, "
+            "movable_assets=%d, beneficiary=%s, name_variants=%s, financial_indicators=%s",
+            filename,
+            merged.i_aff.value if merged.i_aff else None,
+            merged.i_tax.value if merged.i_tax else None,
+            len(merged.balance_series),
+            len(merged.deposit_entries),
+            len(merged.financial_accounts),
+            len(merged.income_sources),
+            len(merged.movable_assets),
+            merged.beneficiary_name,
+            dict(merged.name_variants),
+            merged.financial_indicators,
+        )
         return merged
 
 

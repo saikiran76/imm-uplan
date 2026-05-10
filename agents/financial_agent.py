@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 import statistics
 
 from agents.state import AgentFinding, UplanState
+
+logger = logging.getLogger("uplan.financial_agent")
 
 
 def run_financial_agent(state: UplanState) -> dict:
@@ -21,6 +24,16 @@ def run_financial_agent(state: UplanState) -> dict:
     t_req = state["t_req"]
     alpha = state["alpha"]
     w_late = state["w_late"]
+
+    # ── STEP 1: AGGRESSIVE TRACE LOGGING ──
+    logger.info(
+        "FINANCIAL AGENT RECEIVED STATE: balance_series=%s, deposit_entries=%s, "
+        "t_req=%s, alpha=%s, w_late=%s, i_aff=%s, financial_accounts=%d items, "
+        "movable_assets=%d items",
+        balances, deposits, t_req, alpha, w_late, state.get("i_aff"),
+        len(state.get("financial_accounts", [])),
+        len(state.get("movable_assets", [])),
+    )
 
     if t_req <= 0:
         return {"findings": findings}
@@ -82,20 +95,30 @@ def _evaluate_balance_series(
             requires_human_review=True,
         ))
 
+    # ── STEP 3: DEPOSIT ANOMALY GUARDRAILS ──
+    # Only flag deposits if we have a real time-series (>1 balance point)
+    # AND a meaningful alpha threshold is configured.
     window = len(balances)
-    for month_offset, amount in deposits:
-        if amount > alpha * t_req and month_offset > (window - w_late):
-            findings.append(AgentFinding(
-                agent_id="financial_flow",
-                rule_id="R2_deposit_anomaly",
-                severity="warning",
-                message=(
-                    f"Late large deposit of {amount:,.0f} "
-                    f"({amount / t_req * 100:.0f}% of required funds) in month "
-                    f"{month_offset:.1f}. Provenance documentation required."
-                ),
-                requires_human_review=False,
-            ))
+    effective_alpha = alpha if alpha > 0 else 0.20  # default: flag only deposits > 20% of t_req
+    if window < 2:
+        logger.info(
+            "Skipping R2 deposit anomaly checks: only %d balance point(s), no time-series.",
+            window,
+        )
+    else:
+        for month_offset, amount in deposits:
+            if amount > effective_alpha * t_req and month_offset > (window - max(w_late, 1.0)):
+                findings.append(AgentFinding(
+                    agent_id="financial_flow",
+                    rule_id="R2_deposit_anomaly",
+                    severity="warning",
+                    message=(
+                        f"Late large deposit of {amount:,.0f} "
+                        f"({amount / t_req * 100:.0f}% of required funds) in month "
+                        f"{month_offset:.1f}. Provenance documentation required."
+                    ),
+                    requires_human_review=False,
+                ))
 
     if b_avg > 0:
         sigma = (max(balances) - min(balances)) / b_avg

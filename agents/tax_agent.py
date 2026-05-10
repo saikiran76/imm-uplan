@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import logging
+
 from agents.state import AgentFinding, UplanState
+
+logger = logging.getLogger("uplan.tax_agent")
 
 
 def run_tax_agent(state: UplanState) -> dict:
@@ -17,6 +21,13 @@ def run_tax_agent(state: UplanState) -> dict:
     epsilon = state["epsilon"]
     delta_warn = state["delta_warn"]
     delta_crit = state["delta_crit"]
+
+    logger.info(
+        "TAX AGENT RECEIVED STATE: i_tax=%s, i_form=%s, i_aff=%s, "
+        "epsilon=%s, delta_warn=%s, delta_crit=%s, income_sources=%d",
+        i_tax, i_form, i_aff, epsilon, delta_warn, delta_crit,
+        len(state.get("income_sources", [])),
+    )
 
     if not i_tax and i_aff:
         findings.append(AgentFinding(

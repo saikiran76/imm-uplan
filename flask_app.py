@@ -131,6 +131,16 @@ def build_state_from_payload(
     full = payload.get("full_result", {})
     fields = payload.get("reliable_fields", {})
 
+    logger.info(
+        "BUILD_STATE reliable_fields keys=%s, i_aff=%s, i_tax=%s, balance_closing=%s, "
+        "beneficiary=%s, financial_accounts=%d, income_sources=%d, movable_assets=%d",
+        list(fields.keys()), fields.get("i_aff"), fields.get("i_tax"),
+        fields.get("balance_closing"), fields.get("beneficiary_name"),
+        len(fields.get("financial_accounts", [])),
+        len(fields.get("income_sources", [])),
+        len(fields.get("movable_assets", [])),
+    )
+
     balance_series = [
         float(item["value"]) for item in full.get("balance_series", [])
         if item.get("value") is not None
@@ -141,7 +151,15 @@ def build_state_from_payload(
         if wrapper.get("value") is not None
     ]
 
-    return {
+    logger.info(
+        "BUILD_STATE full_result: balance_series=%s, deposit_entries=%s, "
+        "financial_accounts_raw=%d, name_variants=%s",
+        balance_series, deposit_entries,
+        len(full.get("financial_accounts", [])),
+        full.get("name_variants"),
+    )
+
+    state = {
         "visa_type": visa_type,
         "destination_jurisdiction": destination_jurisdiction,
         "applicant_income_percentile": applicant_income_percentile,
@@ -180,6 +198,14 @@ def build_state_from_payload(
             or payload.get("summary", {}).get("raw_purge_confirmed")
         ),
     }
+    logger.info(
+        "BUILD_STATE FINAL: balance_series=%s, deposit_entries=%s, "
+        "i_aff=%s, i_tax=%s, financial_accounts=%d, movable_assets=%d",
+        state["balance_series"], state["deposit_entries"],
+        state["i_aff"], state["i_tax"],
+        len(state["financial_accounts"]), len(state["movable_assets"]),
+    )
+    return state
 
 
 async def run_extraction(pdf_path: Path, session_id: str) -> dict[str, Any]:
@@ -193,13 +219,31 @@ async def run_extraction(pdf_path: Path, session_id: str) -> dict[str, Any]:
         "full_result": result,
         "extraction_trace": [e.get("scratchpad") for e in extractor.debug_events if e.get("scratchpad")],
     }
-    return to_jsonable(payload)
+    jsonable = to_jsonable(payload)
+
+    # ── STEP 1: AGGRESSIVE TRACE LOGGING ──
+    rf = jsonable.get("reliable_fields", {})
+    logger.info(
+        "EXTRACTED payload for '%s': i_aff=%s, i_tax=%s, balance_closing=%s, "
+        "beneficiary_name=%s, name_variants=%s, financial_accounts=%d, "
+        "income_sources=%d, movable_assets=%d, scratchpads=%d",
+        pdf_path.name,
+        rf.get("i_aff"), rf.get("i_tax"), rf.get("balance_closing"),
+        rf.get("beneficiary_name"), rf.get("name_variants"),
+        len(rf.get("financial_accounts", [])),
+        len(rf.get("income_sources", [])),
+        len(rf.get("movable_assets", [])),
+        len(jsonable.get("extraction_trace", [])),
+    )
+    return jsonable
 
 
 def merge_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     """Merge multiple single-document extraction payloads."""
     if len(payloads) == 1:
+        logger.info("MERGE: single payload, returning as-is.")
         return payloads[0]
+    logger.info("MERGE: combining %d payloads.", len(payloads))
 
     merged_full: dict[str, Any] = {
         "balance_series": [],
@@ -250,13 +294,13 @@ def merge_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
 
         for key in ("currency_code", "i_tax", "i_form", "i_aff", "i_spon",
                      "spon_relationship", "tax_year", "beneficiary_name",
-                     "declarant_address"):
+                     "declarant_address", "balance_closing"):
             if merged_fields.get(key) is None and fields.get(key) is not None:
                 merged_fields[key] = fields[key]
             if merged_full.get(key) is None and full.get(key) is not None:
                 merged_full[key] = full[key]
 
-    return {
+    merged_result = {
         "summary": {
             "filename": "combined-packet",
             "total_pages": merged_full["total_pages"],
@@ -266,7 +310,18 @@ def merge_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "reliable_fields": merged_fields,
         "full_result": merged_full,
+        "extraction_trace": merged_full.get("extraction_trace", []),
     }
+    # ── STEP 1: LOG STATE AFTER MERGE ──
+    logger.info(
+        "STATE AFTER MERGE: i_aff=%s, i_tax=%s, balance_closing=%s, "
+        "beneficiary_name=%s, financial_accounts=%d, income_sources=%d",
+        merged_fields.get("i_aff"), merged_fields.get("i_tax"),
+        merged_fields.get("balance_closing"), merged_fields.get("beneficiary_name"),
+        len(merged_fields.get("financial_accounts", [])),
+        len(merged_fields.get("income_sources", [])),
+    )
+    return merged_result
 
 
 def run_agent_pipeline(payload: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
@@ -278,13 +333,27 @@ def run_agent_pipeline(payload: dict[str, Any], params: dict[str, Any]) -> dict[
         destination_jurisdiction=params.get("destination_jurisdiction", "JP"),
         applicant_income_percentile=params.get("applicant_income_percentile"),
     )
+
+    # ── STEP 1: LOG LANGGRAPH INPUT STATE ──
+    logger.info(
+        "LANGGRAPH INPUT STATE: balance_series=%s, deposit_entries=%s, "
+        "i_aff=%s, i_tax=%s, financial_accounts=%d, movable_assets=%d",
+        state.get("balance_series"), state.get("deposit_entries"),
+        state.get("i_aff"), state.get("i_tax"),
+        len(state.get("financial_accounts", [])),
+        len(state.get("movable_assets", [])),
+    )
+
     output = build_graph().invoke(state)
+
+    # extraction_trace can live at top-level OR inside full_result (after merge)
+    trace = payload.get("extraction_trace", []) or payload.get("full_result", {}).get("extraction_trace", [])
 
     return {
         "summary": payload.get("summary", {}),
         "reliable_fields": payload.get("reliable_fields", {}),
         "full_result": payload.get("full_result", {}),
-        "extraction_trace": payload.get("full_result", {}).get("extraction_trace", []),
+        "extraction_trace": trace,
         "agent_output": output,
         "findings": output["findings"],
         "narrative_synthesis": {
