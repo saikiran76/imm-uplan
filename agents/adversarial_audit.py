@@ -11,6 +11,15 @@ def run_adversarial_audit(state: UplanState) -> dict:
     findings = state.get("findings", [])
     critical = [f["message"] for f in findings if f.get("severity") == "critical"]
     warnings = [f["message"] for f in findings if f.get("severity") == "warning"]
+    docs = []
+    if state.get("financial_accounts"):
+        docs.append("bank balance certificate / financial account evidence")
+    if state.get("balance_series"):
+        docs.append("bank statement series")
+    if state.get("i_tax"):
+        docs.append("tax return or computation")
+    if state.get("name_variants"):
+        docs.append("identity/name evidence")
 
     if critical:
         rejection = "Strongest rejection case: " + " ".join(critical[:3])
@@ -20,6 +29,13 @@ def run_adversarial_audit(state: UplanState) -> dict:
         rejection = (
             "Strongest rejection case: no major rule failure found, but officer may "
             "still request corroboration for source of funds and identity consistency."
+        )
+    if docs:
+        rejection += " Evidence reviewed: " + ", ".join(docs) + "."
+    if state.get("financial_accounts") and not state.get("balance_series"):
+        rejection += (
+            " The balance certificate supports existence of funds at issue date, "
+            "but it does not by itself prove accumulation history or rule out show-money deposits."
         )
 
     evidence = []
@@ -35,6 +51,8 @@ def run_adversarial_audit(state: UplanState) -> dict:
         "Rebuttal case: " + (", ".join(evidence) if evidence else "insufficient corroborating evidence yet")
         + ". Remaining gaps should be answered with bank statements, tax computation, and balance certificates."
     )
+    if state.get("spon_relationship"):
+        rebuttal += f" Relationship evidence currently states {state['spon_relationship']}."
 
     return {
         "rejection_case": rejection,

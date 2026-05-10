@@ -243,6 +243,8 @@ class ExtractionParser:
     ) -> None:
         r.currency_code = d.get("currency_code")
         r.name_string = d.get("account_holder_name")
+        r.beneficiary_name = d.get("beneficiary_name")
+        r.spon_relationship = d.get("relationship")
         institution = d.get("institution_name")
         account_number = str(d.get("account_number")) if d.get("account_number") is not None else None
 

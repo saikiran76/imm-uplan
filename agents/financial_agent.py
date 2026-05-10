@@ -47,9 +47,10 @@ def run_financial_agent(state: UplanState) -> dict:
                 rule_id="R1_bank_statement_missing",
                 severity="warning",
                 message=(
-                    "Affidavit lists bank and fixed-deposit balances, but no "
-                    "month-by-month bank statement series was available. "
-                    "Maintained liquidity and late-deposit risk cannot be verified."
+                    "Bank or fixed-deposit balances were found, but no month-by-month "
+                    "bank statement series was available. A balance certificate proves "
+                    "point-in-time funds, not accumulation history; maintained "
+                    "liquidity and late-deposit risk cannot be verified."
                 ),
                 requires_human_review=False,
             ))

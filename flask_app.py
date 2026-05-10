@@ -417,6 +417,37 @@ def extract():
 # Startup
 # ─────────────────────────────────────────────────────────────────────────────
 
+@app.route("/audit", methods=["POST"])
+def audit():
+    """
+    Agent-only endpoint.
+
+    Accepts existing extraction JSON and returns deterministic findings,
+    narrative synthesis, and adversarial audit without rerunning extraction.
+    """
+    body = request.get_json(silent=True) or {}
+    payloads = body.get("extraction_payloads") or body.get("payloads") or []
+    if isinstance(body.get("extraction_payload"), dict):
+        payloads = [body["extraction_payload"]]
+    if isinstance(payloads, dict):
+        payloads = [payloads]
+    if not payloads:
+        return jsonify({"error": "Provide extraction_payloads or extraction_payload JSON."}), 400
+
+    params = {
+        "t_req": body.get("t_req", 800000.0),
+        "visa_type": body.get("visa_type", "student"),
+        "destination_jurisdiction": body.get("destination_jurisdiction", "JP"),
+        "applicant_income_percentile": body.get("applicant_income_percentile"),
+    }
+    merged = merge_payloads(payloads) if len(payloads) > 1 else payloads[0]
+    result = run_agent_pipeline(merged, params)
+    return Response(
+        json.dumps(to_jsonable(result), indent=2),
+        mimetype="application/json",
+    )
+
+
 def init_backend(model_path: str, backend_type: str, device: str, max_new_tokens: int):
     """Initialize the VLM backend (called once at startup)."""
     global _vlm_backend, _model_path, _backend_type, _start_time

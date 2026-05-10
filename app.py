@@ -119,16 +119,27 @@ def normalize_result(result: dict[str, Any]) -> dict[str, Any]:
         findings = result.get("findings", output.get("findings", []))
         full = result.get("full_result", {})
         summary = result.get("summary", {})
+        narrative = result.get("narrative_synthesis") or {
+            "narrative_score": output.get("narrative_score"),
+            "human_review_required": output.get("human_review_required"),
+            "synthesis_trace": output.get("synthesis_trace"),
+        }
+        adversarial = result.get("adversarial_audit") or {
+            "rejection_case": output.get("rejection_case"),
+            "rebuttal_case": output.get("rebuttal_case"),
+        }
         return {
             "applicant_name": fields.get("beneficiary_name") or "Applicant",
-            "sponsor_name": fields.get("name_variants", {}).get("affidavit", "Sponsor"),
+            "sponsor_name": fields.get("name_variants", {}).get("affidavit")
+                or fields.get("name_variants", {}).get("bank_balance_certificate", "Sponsor"),
             "sponsor_relationship": fields.get("spon_relationship"),
             "currency_code": fields.get("currency_code"),
             "t_req": output.get("t_req", 800000),
             "documents_parsed": infer_documents(full, summary),
             "reliable_fields": fields,
             "agent_findings": findings,
-            "narrative_synthesis": synthesize(findings),
+            "narrative_synthesis": narrative,
+            "adversarial_audit": adversarial,
             "next_steps": next_steps(findings),
             "deletion_cert": full.get("deletion_cert", ""),
         }
@@ -258,6 +269,10 @@ def backend_unavailable_result(message: str) -> dict[str, Any]:
             "compound_flags": ["Uploaded PDFs were not analysed because the live backend is offline or disabled."],
             "synthesis_trace": "No extraction or agent graph run occurred for this upload.",
         },
+        "adversarial_audit": {
+            "rejection_case": "No live backend result exists for this upload.",
+            "rebuttal_case": "Start the AMD Flask backend and rerun the packet.",
+        },
         "next_steps": [
             {"priority": "critical", "action": "Start the AMD Flask backend and set USE_LIVE_BACKEND=true in the HF Space."}
         ],
@@ -346,6 +361,15 @@ def build_dashboard_html(raw_result: dict[str, Any]) -> str:
         rows = "".join(f"<div style='font-size:12px;padding:4px 0;color:rgba(255,255,255,0.75)'>{item}</div>" for item in synthesis["compound_flags"])
         html += card("Cross-document risks", rows, bg="rgba(245,158,11,0.08)", border="rgba(245,158,11,0.2)")
 
+    adversarial = result.get("adversarial_audit", {})
+    if adversarial.get("rejection_case") or adversarial.get("rebuttal_case"):
+        rows = ""
+        if adversarial.get("rejection_case"):
+            rows += f"<div style='font-size:12px;padding:4px 0;color:rgba(255,255,255,0.75)'><b>Officer rejection case:</b> {adversarial['rejection_case']}</div>"
+        if adversarial.get("rebuttal_case"):
+            rows += f"<div style='font-size:12px;padding:4px 0;color:rgba(255,255,255,0.75)'><b>Applicant rebuttal path:</b> {adversarial['rebuttal_case']}</div>"
+        html += card("Adversarial audit", rows)
+
     if result.get("next_steps"):
         rows = "".join(
             f"<div style='display:flex;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.06);align-items:flex-start'>{badge(step.get('priority','info').upper(), step.get('priority','info'))}<span style='color:rgba(255,255,255,0.75)'>{step.get('action','')}</span></div>"
@@ -372,12 +396,13 @@ def chat_response(message: str, history: list, result_state: dict) -> tuple[list
 
     findings = result.get("agent_findings", [])
     synthesis = result.get("narrative_synthesis", {})
+    adversarial = result.get("adversarial_audit", {})
     if findings:
         first = findings[0]["message"]
         reply = (
             f"The main issue is: {first} "
             f"The current readiness score is {int(float(synthesis.get('narrative_score') or 0) * 100)}%. "
-            "Use the next steps panel to resolve the highest-severity item first."
+            f"Officer-style concern: {adversarial.get('rejection_case', 'review missing corroborating evidence.')}"
         )
     else:
         reply = (
