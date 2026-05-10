@@ -191,6 +191,7 @@ async def run_extraction(pdf_path: Path, session_id: str) -> dict[str, Any]:
         "summary": result.extraction_summary(),
         "reliable_fields": result.reliable_fields(),
         "full_result": result,
+        "extraction_trace": [e.get("scratchpad") for e in extractor.debug_events if e.get("scratchpad")],
     }
     return to_jsonable(payload)
 
@@ -212,6 +213,7 @@ def merge_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
         "raw_purge_confirmed": True,
         "total_pages": 0,
         "deletion_cert": "",
+        "extraction_trace": [],
     }
     merged_fields: dict[str, Any] = {
         "financial_accounts": [],
@@ -227,6 +229,7 @@ def merge_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
         full = payload.get("full_result", {})
         fields = payload.get("reliable_fields", {})
         summaries.append(payload.get("summary", {}))
+        merged_full["extraction_trace"].extend(payload.get("extraction_trace", []))
 
         for key in ("balance_series", "deposit_entries", "financial_accounts",
                      "income_sources", "movable_assets", "properties", "pages"):
@@ -281,6 +284,7 @@ def run_agent_pipeline(payload: dict[str, Any], params: dict[str, Any]) -> dict[
         "summary": payload.get("summary", {}),
         "reliable_fields": payload.get("reliable_fields", {}),
         "full_result": payload.get("full_result", {}),
+        "extraction_trace": payload.get("full_result", {}).get("extraction_trace", []),
         "agent_output": output,
         "findings": output["findings"],
         "narrative_synthesis": {

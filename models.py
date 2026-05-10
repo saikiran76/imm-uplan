@@ -167,20 +167,27 @@ class DocumentExtractionResult:
     def _reliable_money(self, wrapper: Optional[ConfidenceWrapper]) -> Optional[float]:
         return self._reliable_value(wrapper)
 
-    def reliable_fields(self) -> dict[str, object]:
+    def reliable_fields(self) -> dict[str, Any]:
+        """Return scalar fields prioritizing high confidence."""
         if not self.raw_purge_confirmed:
             raise RuntimeError(
                 "PRIVACY GATE: reliable fields are unavailable until raw purge is confirmed."
             )
 
-        latest_balance = self.balance_series[-1] if self.balance_series else None
+        balance_closing = None
+        if self.financial_indicators:
+            balance_closing = self.financial_indicators.get("closing_balance")
+        if balance_closing is None:
+            assets_total = sum(self._reliable_value(a.amount) or 0.0 for a in self.movable_assets)
+            if assets_total > 0:
+                balance_closing = assets_total
 
         return {
             "i_tax": self._reliable_value(self.i_tax),
             "i_form": self._reliable_value(self.i_form),
             "i_aff": self._reliable_value(self.i_aff),
             "i_spon": self._reliable_value(self.i_spon),
-            "balance_closing": self._reliable_value(latest_balance),
+            "balance_closing": balance_closing,
             "currency_code": self.currency_code,
             "tax_year": self.tax_year,
             "spon_relationship": self.spon_relationship,

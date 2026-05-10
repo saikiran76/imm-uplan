@@ -600,6 +600,16 @@ class DocumentExtractor:
         previous_page_type: Optional[PageType] = None,
     ) -> tuple[PageType, SourceQuality]:
         """Run the page classifier prompt and return the page type."""
+        
+        # Action 3: Basic document routing
+        filename_lower = self.filename.lower() if hasattr(self, 'filename') and self.filename else ""
+        if any(kw in filename_lower for kw in ["bank", "statement", "certificate"]):
+            self.debug_events.append({"stage": "classify", "page_number": page_num, "rule": "filename_keyword", "assigned_type": "bank_statement"})
+            return PageType.BANK_STATEMENT, SourceQuality.DIGITAL
+        elif any(kw in filename_lower for kw in ["tax", "return"]):
+            self.debug_events.append({"stage": "classify", "page_number": page_num, "rule": "filename_keyword", "assigned_type": "tax_return"})
+            return PageType.TAX_RETURN, SourceQuality.DIGITAL
+            
         ptype, quality, raw = self._run_classifier_prompt(
             img=img,
             page_num=page_num,
