@@ -228,7 +228,8 @@ CSS = """
   border-top: 1px solid var(--border-glass);
   margin: 10px 0;
 }
-/* Chat input fix */
+
+/* ── Chat styling ────────────────────────── */
 .gradio-container textarea {
   min-height: 44px !important;
 }
@@ -383,7 +384,8 @@ def run_backend(files: list[Any] | None) -> dict[str, Any]:
             handle = open(path, "rb")
             handles.append(handle)
             upload_files.append(("files", (Path(path).name, handle, "application/pdf")))
-        response = requests.post(AMD_ENDPOINT, files=upload_files, headers=headers, timeout=300)
+        url = f"{AMD_ENDPOINT.rstrip('/')}/extract"
+        response = requests.post(url, files=upload_files, headers=headers, timeout=300)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as exc:
@@ -612,6 +614,23 @@ CHECKLIST_HTML = """
 """
 
 
+UPLAN_THEME = gr.themes.Soft(
+    primary_hue="blue",
+    secondary_hue="violet",
+    neutral_hue="slate",
+    font=[
+        gr.themes.GoogleFont("Google Sans Flex"),
+        gr.themes.GoogleFont("Inter"),
+        "sans-serif",
+    ],
+    font_mono=[
+        gr.themes.GoogleFont("JetBrains Mono"),
+        gr.themes.GoogleFont("Fira Code"),
+        "monospace",
+    ],
+)
+
+
 def build_ui():
     with gr.Blocks(
         title="Uplan - Immigration Document Intelligence",
@@ -620,30 +639,30 @@ def build_ui():
         gr.HTML(HEADER_HTML)
 
         with gr.Row(equal_height=False):
-            with gr.Column(scale=1, min_width=270):
-                gr.Markdown("### Agent tools")
+            with gr.Column(scale=1, min_width=280):
+                gr.Markdown("### ⚙️ Agent tools")
                 demo_toggle = gr.Checkbox(label="Demo mode", value=True, info="Uses a clearly marked sample analysis. Turn off for live AMD backend.")
                 upload_box = gr.File(label="Upload PDF packet", file_types=[".pdf"], file_count="multiple", visible=False)
                 demo_toggle.change(lambda enabled: gr.update(visible=not enabled), demo_toggle, upload_box)
-                analyse_btn = gr.Button("Analyse packet", variant="primary")
+                analyse_btn = gr.Button("⚡ Analyse packet", variant="primary")
                 gr.HTML(CHECKLIST_HTML)
-                gr.Markdown("Raw documents are processed outside the UI in live mode. The extraction layer emits a deletion certificate after purge.")
+                gr.Markdown("<span style='font-size:12px;color:rgba(219,216,211,0.35)'>Raw documents are processed outside the UI in live mode. The extraction layer emits a deletion certificate after purge.</span>")
 
             with gr.Column(scale=2, min_width=360):
-                gr.Markdown("### Consultant")
+                gr.Markdown("### 💬 Consultant")
                 chatbot = gr.Chatbot(
                     label="Consultant",
-                    height=560,
+                    height=580,
                     show_label=False,
-                    value=[{"role": "assistant", "content": "Welcome to Uplan. Load the sample demo or upload a packet when the AMD backend is online. The dashboard will show whether the result is live or backend-offline."}],
+                    value=[{"role": "assistant", "content": "Welcome to **Uplan**. Load the sample demo or upload a packet when the AMD backend is online. The dashboard will reflect whether the result is live or backend-offline.\n\n*Ask me about risks, missing evidence, or strategy.*"}],
                 )
                 with gr.Row():
                     chat_input = gr.Textbox(placeholder="Ask about risks, missing evidence, or next steps...", show_label=False, container=False, scale=5)
                     send_btn = gr.Button("Send", variant="secondary", scale=1)
 
-            with gr.Column(scale=2, min_width=380):
-                gr.Markdown("### Readiness dashboard")
-                dashboard = gr.HTML("<p style='color:rgba(255,255,255,0.4);padding:16px;text-align:center'>Load demo or upload documents to begin.</p>")
+            with gr.Column(scale=2, min_width=400):
+                gr.Markdown("### 📊 Readiness dashboard")
+                dashboard = gr.HTML("<div style='text-align:center;padding:48px 16px;color:rgba(219,216,211,0.35);font-family:\"Google Sans Flex\",\"Inter\",sans-serif'><div style='font-size:40px;margin-bottom:12px;opacity:0.4'>📄</div><p style='font-size:15px;font-weight:450'>Load demo or upload documents to begin.</p></div>")
 
         analyse_btn.click(handle_upload, [upload_box, demo_toggle], [dashboard, chatbot, result_state])
         send_btn.click(chat_response, [chat_input, chatbot, result_state], [chatbot, chat_input])
@@ -652,11 +671,14 @@ def build_ui():
     return app
 
 
+demo = build_ui()
+
 if __name__ == "__main__":
-    build_ui().launch(
+    demo.launch(
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
         theme=gr.themes.Base(),
         css=CSS,
     )
+
