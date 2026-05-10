@@ -663,6 +663,14 @@ CHECKLIST_HTML = """
 def build_ui():
     with gr.Blocks(
         title="Uplan - Immigration Document Intelligence",
+        theme=gr.themes.Soft(
+            primary_hue="blue",
+            secondary_hue="violet",
+            neutral_hue="slate",
+            font=["Google Sans Flex", "Google Sans", "Inter", "sans-serif"],
+            font_mono=["JetBrains Mono", "Fira Code", "monospace"],
+        ),
+        css=CSS,
     ) as app:
         result_state = gr.State({})
         gr.HTML(HEADER_HTML)
@@ -700,17 +708,12 @@ def build_ui():
     return app
 
 
+demo = build_ui()
+
 if __name__ == "__main__":
-    build_ui().launch(
+    demo.launch(
         server_name="0.0.0.0",
         server_port=7860,
         show_error=True,
-        theme=gr.themes.Soft(
-            primary_hue="blue",
-            secondary_hue="violet",
-            neutral_hue="slate",
-            font=["Google Sans Flex", "Google Sans", "Inter", "sans-serif"],
-            font_mono=["JetBrains Mono", "Fira Code", "monospace"],
-        ),
-        css=CSS,
     )
+
